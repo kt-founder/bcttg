@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:mysql://mysql:3306/bcttg?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: bcttg
-    password: bcttg
+    url: jdbc:mysql://mysql:3306/${BCTTG_DB_NAME:bcttg}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${BCTTG_DB_USER:bcttg}
+    password: ${BCTTG_DB_PASS:bcttg}
   jpa:
     hibernate:
       ddl-auto: validate
