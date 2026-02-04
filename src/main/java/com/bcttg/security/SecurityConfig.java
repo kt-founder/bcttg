@@ -33,12 +33,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableConfigurationProperties(SecurityProperties.class)
 public class SecurityConfig {
     private final SecurityProperties properties;
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public SecurityConfig(SecurityProperties properties, JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfig(SecurityProperties properties) {
         this.properties = properties;
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
     @Bean
@@ -63,7 +61,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         http.csrf(csrf -> csrf.disable());
         http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
@@ -87,6 +85,11 @@ public class SecurityConfig {
         );
 
         return http.build();
+    }
+
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter(UserDetailsService userDetailsService, JwtTokenProvider tokenProvider) {
+        return new JwtAuthenticationFilter(tokenProvider, userDetailsService);
     }
 
     @Bean
