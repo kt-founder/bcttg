@@ -1,0 +1,560 @@
+﻿TÀI LIỆU ĐẶC TẢ API & TÀI LIỆU THỰC THI
+Sổ tay điện tử – Danh mục & Nội dung (Truyền thống/Nét tiêu biểu) + Ca khúc truyền thống
+Phiên bản: v0.1 (nháp để chỉnh sửa)
+Ngày: 02/02/2026
+Phạm vi: Backend API + mô hình dữ liệu + hướng dẫn thực thi (Dev/QA/Deploy)
+1. Mục tiêu và phạm vi
+Tài liệu này mô tả đầy đủ API cho các nhóm chức năng nội dung trọng tâm:
+Danh mục nội dung cho “Truyền thống bộ đội” và “Nét tiêu biểu” gồm 2 cấp: (1) Cấp đề mục (root) và (2) Cấp nội dung (leaf/child).
+Mọi đối tượng có CRUD, ẩn/hiện (visibility), và thứ tự hiển thị (sort order).
+Ca khúc truyền thống có phân loại theo danh mục và có CRUD, ẩn/hiện, thứ tự tương tự.
+Chuẩn hóa response, phân quyền, soft delete, phân trang, tìm kiếm, sắp xếp.
+Tài liệu thực thi (Execution doc) ở cuối dùng để triển khai theo từng bước: thiết kế DB, API, kiểm thử, và triển khai.
+2. Giả định & thuật ngữ
+API theo chuẩn REST, trả về JSON.
+Xác thực bằng JWT Bearer token (hoặc tương đương).
+Soft delete: xóa logic (deleted_at) để tránh mất dữ liệu.
+Ẩn/hiện: is_visible (true/false). Với End-user chỉ thấy dữ liệu is_visible=true và không bị xóa.
+Thứ tự: sort_order (integer). Số nhỏ hiển thị trước.
+Ký hiệu:
+Admin API: dành cho quản trị (có quyền).
+Public API: dành cho người dùng cuối (End-user).
+3. Tổng quan module theo Master plan
+Theo file Master plan, các module liên quan trực tiếp gồm: “Truyền thống bộ đội/Nét tiêu biểu”, “Quản lí nội dung bài viết”, “Ca khúc truyền thống”, “Quản lý ca khúc”.
+Tài liệu này tập trung đặc tả phần danh mục + nội dung + ca khúc; các module khác (ghi chú, hồ sơ, báo cáo...) sẽ tách tài liệu nếu cần.
+4. Mô hình dữ liệu đề xuất
+4.1. Bảng danh mục nội dung (content_categories)
+Danh mục dùng chung cho Truyền thống/Nét tiêu biểu với cấu trúc 2 cấp (parent-child).
+Trường
+Kiểu
+Bắt buộc
+Mô tả
+id
+uuid/bigint
+Y
+Khóa chính
+type
+enum
+Y
+TRUYEN_THONG | 
+NET_TIEU_BIEU
+parent_id
+uuid/bigint
+N
+NULL = cấp đề mục; khác NULL = cấp nội dung (child)
+name
+string
+Y
+Tên danh mục
+slug
+string
+Y
+Duy nhất theo (type, parent_id) để tạo URL
+description
+text
+N
+Mô tả ngắn
+is_visible
+boolean
+Y
+Ẩn/hiện
+sort_order
+int
+Y
+Thứ tự hiển thị trong cùng parent_id
+created_at/updated_at
+datetime
+Y
+Thời gian
+deleted_at
+datetime
+N
+Soft delete
+4.2. Bảng bài viết/nội dung (content_items)
+Nội dung bài viết gắn với danh mục cấp 2 (child).
+Trường
+Kiểu
+Bắt buộc
+Mô tả
+id
+uuid/bigint
+Y
+Khóa chính
+category_id
+uuid/bigint
+Y
+FK -> content_categories (phải là child)
+title
+string
+Y
+Tiêu đề
+summary
+text
+N
+Tóm tắt
+body_html
+longtext
+Y
+Nội dung (HTML/Rich text)
+cover_media_id
+uuid/bigint
+N
+Ảnh đại diện (FK -> media_assets)
+is_visible
+boolean
+Y
+Ẩn/hiện
+sort_order
+int
+Y
+Thứ tự trong cùng category_id
+published_at
+datetime
+N
+Thời điểm xuất bản (nếu cần)
+view_count
+int
+Y
+Mặc định 0 (public API có thể tăng)
+created_at/updated_at
+datetime
+Y
+Thời gian
+deleted_at
+datetime
+N
+Soft delete
+4.3. Bảng danh mục ca khúc (song_categories)
+Danh mục ca khúc có thể 1 cấp hoặc nhiều cấp; để “tương tự” nội dung, khuyến nghị hỗ trợ 2 cấp (tuỳ nghiệp vụ).
+Trường
+Kiểu
+Bắt buộc
+Mô tả
+id
+uuid/bigint
+Y
+Khóa chính
+parent_id
+uuid/bigint
+N
+NULL = cấp 1; khác NULL = cấp 2 (nếu dùng)
+name
+string
+Y
+Tên danh mục
+slug
+string
+Y
+Duy nhất theo parent_id
+description
+text
+N
+Mô tả
+is_visible
+boolean
+Y
+Ẩn/hiện
+sort_order
+int
+Y
+Thứ tự hiển thị
+created_at/updated_at
+datetime
+Y
+Thời gian
+deleted_at
+datetime
+N
+Soft delete
+4.4. Bảng ca khúc (songs)
+Ca khúc có lời và file audio (hoặc URL).
+Trường
+Kiểu
+Bắt buộc
+Mô tả
+id
+uuid/bigint
+Y
+Khóa chính
+category_id
+uuid/bigint
+N
+FK -> song_categories (có thể null nếu không phân loại)
+title
+string
+Y
+Tên bài hát
+lyric
+longtext
+Y
+Lời bài hát (plain text hoặc HTML)
+audio_media_id
+uuid/bigint
+N
+FK -> media_assets (file mp3/wav)
+audio_url
+string
+N
+Nếu lưu external URL (chỉ dùng 1 trong 2)
+duration_sec
+int
+N
+Thời lượng
+is_visible
+boolean
+Y
+Ẩn/hiện
+sort_order
+int
+Y
+Thứ tự trong cùng category_id
+created_at/updated_at
+datetime
+Y
+Thời gian
+deleted_at
+datetime
+N
+Soft delete
+4.5. Bảng media (media_assets)
+Dùng chung để upload ảnh và audio.
+Trường
+Kiểu
+Bắt buộc
+Mô tả
+id
+uuid/bigint
+Y
+Khóa chính
+file_name
+string
+Y
+Tên file gốc
+mime_type
+string
+Y
+image/jpeg, audio/mpeg...
+size_bytes
+bigint
+Y
+Dung lượng
+storage_key
+string
+Y
+Đường dẫn/key trên storage (S3/MinIO/local)
+url
+string
+Y
+URL truy cập (có thể 
+signed)
+created_by
+uuid/bigint
+N
+Người upload
+created_at
+datetime
+Y
+Thời gian
+deleted_at
+datetime
+N
+Soft delete
+5. Chuẩn API (Request/Response)
+5.1. Header & Auth
+Header: Authorization: Bearer <token>
+Content-Type: application/json (trừ endpoint upload dùng multipart/form-data)
+Timezone: server lưu UTC; client hiển thị theo locale.
+5.2. Chuẩn response
+Response thành công (gợi ý):
+{ "success": true, "data": <object|array>, "meta": { ... } }
+Response lỗi (gợi ý):
+{ "success": false, "error": { "code": "VALIDATION_ERROR", "message": "...", "details": [ ... ] } }
+5.3. Phân trang, tìm kiếm, sắp xếp
+Pagination: ?page=1&page_size=20 (tối đa 100)
+Search: ?q=keyword (search theo name/title/summary)
+Sort: ?sort=sort_order&order=asc | ?sort=created_at&order=desc
+Filter: ?is_visible=true/false (chỉ admin được filter false) 
+6. API danh mục nội dung (Truyền thống/Nét tiêu biểu)
+Base path (gợi ý): /api/v1
+6.1. Admin - CRUD danh mục
+Method
+Path
+Mục đích
+Body chính
+Ghi chú
+GET
+/admin/content-categories
+Danh sách danh mục
+-
+Hỗ trợ filter type, parent_id, q, pagination
+POST
+/admin/content-categories
+Tạo danh mục
+{type,parent_id?,name,slug,description?,is_visible?,sort_order?}
+Nếu không gửi sort_order: tự gán = 
+max+1
+GET
+/admin/content-categories/{id}
+Chi tiết
+-
+PUT
+/admin/content-categories/{id}
+Cập nhật
+{name,slug,description,is_visible,sort_order,parent_id?}
+Cho phép đổi parent trong phạm vi 2 cấp
+DELETE
+/admin/content-categories/{id}
+Xóa
+-
+Soft delete; chặn xóa nếu còn child/nội dung (tùy rule)
+PATCH
+/admin/content-categories/{id}/visibility
+Ẩn/hiện
+{is_visible:true|false}
+PATCH
+/admin/content-categories/reorder
+Sắp xếp thứ tự
+{parent_id?, type, orders:[{id,sort_order}] }
+Reorder theo danh sách; validate cùng parent/type
+6.2. Public - truy vấn danh mục
+Method
+Path
+Mục đích
+Ghi chú
+GET
+/public/content-categories
+Danh sách danh mục hiển thị
+Chỉ is_visible=true; có thể tách theo type
+GET
+/public/content-categories/{id}
+Chi tiết danh mục
+Chỉ trả về nếu is_visible=true
+7. API nội dung bài viết (Truyền thống/Nét tiêu biểu)
+7.1. Admin - CRUD nội dung
+Method
+Path
+Mục đích
+Body chính
+Ghi chú
+GET
+/admin/content-items
+Danh sách nội dung
+-
+filter: category_id, type, q, is_visible, pagination
+POST
+/admin/content-items
+Tạo nội dung
+{category_id,title,summary?,body_html,cover_media_id?,is_visible?,sort_order?}
+category_id phải là child
+GET
+/admin/content-items/{id}
+Chi tiết
+-
+PUT
+/admin/content-items/{id}
+Cập nhật
+{category_id?,title,summary,body_html,cover_media_id,is_visible,sort_order}
+DELETE
+/admin/content-items/{id}
+Xóa
+-
+Soft delete
+PATCH
+/admin/content-items/{id}/visibility
+Ẩn/hiện
+{is_visible:true|false}
+PATCH
+/admin/content-items/reorder
+Sắp xếp
+{category_id, orders:[{id,sort_order}] }
+Validate cùng category_id
+POST
+/admin/content-
+items/{id}/media
+Gắn medi
+a vào body
+multipart: file
+Trả về media_i
+d + url để editor nhúng
+7.2. Public - danh sách & chi tiết
+Method
+Path
+Mục đích
+Ghi chú
+GET
+/public/content-items
+Danh sách nội dung hiển thị
+filter: type, category_id, q; chỉ is_visible=true
+GET
+/public/content-items/{id}
+Chi tiết nội dung
+Chỉ trả về nếu is_visible=true; có thể tăng view_count
+8. API danh mục ca khúc & ca khúc
+8.1. Admin - danh mục ca khúc
+Method
+Path
+Mục đích
+Body chính
+Ghi chú
+GET
+/admin/song-categories
+Danh sách danh mục
+-
+filter parent_id, q, is_visible
+POST
+/admin/song-categories
+Tạo danh mục
+{parent_id?,name,slug,description?,is_visible?,sort_order?}
+PUT
+/admin/song-categories/{id}
+Cập nhật
+{parent_id?,name,slug,description,is_visible,sort_order}
+DELETE
+/admin/song-categories/{id}
+Xóa
+-
+Soft delete
+PATCH
+/admin/song-categories/{id}/visibility
+Ẩn/hiện
+{is_visible:true|false}
+PATCH
+/admin/song-categories/reorder
+Sắp xếp
+{parent_id?, orders:[{id,sort_order}] }
+8.2. Admin - ca khúc
+Method
+Path
+Mục đích
+Body chính
+Ghi chú
+GET
+/admin/songs
+Danh sách ca khúc
+-
+filter category_id, q, is_visible
+POST
+/admin/songs
+Thêm bài hát
+{category_id?,title,lyric,audio_media_id?|audio_url?,duration_sec?,is_visible?,sort_order?}
+audio_media_id xor audio_url
+GET
+/admin/songs/{id}
+Chi tiết
+-
+PUT
+/admin/songs/{id}
+Cập nhật
+{category_id?,title,lyric,audio_media_id?,audio_url?,duration_sec?,is_visible,sort_order}
+DELETE
+/admin/songs/{id}
+Xóa
+-
+Soft delete
+PATCH
+/admin/songs/{id}/visibility
+Ẩn/hiện
+{is_visible:true|false}
+PATCH
+/admin/songs/reorder
+Sắp xếp
+{category_id?, orders:[{id,sort_order}] }
+category_id null: reorder theo nhóm null
+8.3. Public - ca khúc
+Method
+Path
+Mục đích
+Ghi chú
+GET
+/public/song-categories
+Danh sách danh mục hiển thị
+is_visible=true
+GET
+/public/songs
+Danh sách bài hát
+filter category_id, q; chỉ is_visible=true
+GET
+/public/songs/{id}
+Chi tiết bài hát (lời + audio)
+Chỉ trả về nếu is_visible=true
+9. API Media upload
+Dùng cho upload ảnh (cover, ảnh trong bài) và audio bài hát.
+Method
+Path
+Mục đích
+Body chính
+Ghi chú
+POST
+/admin/media
+Upload media
+multipart/form-data: file
+Trả về {id,url,mime_type,size_bytes}
+GET
+/admin/media/{id}
+Chi tiết media
+-
+DELETE
+/admin/media/{id}
+Xóa media
+-
+Soft delete; nếu đang được tham chiếu thì chặn/cho phép tùy policy
+10. Quy tắc nghiệp vụ quan trọng
+10.1. Danh mục 2 cấp
+Cấp đề mục: parent_id = NULL.
+Cấp nội dung: parent_id != NULL; chỉ cho phép tối đa 2 cấp (không cho phép child của child).
+Nội dung bài viết chỉ được gắn vào danh mục cấp nội dung (child).
+10.2. Ẩn/hiện
+Ẩn danh mục: end-user không thấy danh mục đó; tùy nghiệp vụ có thể ẩn luôn toàn bộ child và content bên dưới (khuyến nghị: ẩn theo cây).
+Ẩn nội dung/ca khúc: end-user không thấy item đó.
+Admin luôn có thể xem tất cả (kể cả is_visible=false) qua admin endpoints.
+10.3. Thứ tự hiển thị
+sort_order là số nguyên >= 0.
+Khi reorder: gửi mảng orders gồm (id, sort_order). Server validate tất cả id thuộc cùng scope (cùng parent_id/type hoặc cùng category_id).
+Khuyến nghị: khi tạo mới mà không có sort_order thì tự gán = max(sort_order)+1 trong scope.
+10.4. Ràng buộc khi xóa
+Xóa danh mục cấp đề mục: 
+Có thông báo xóa toàn bộ nội dung
+Xóa danh mục cấp nội dung: 
+Có thông báo xóa toàn bộ nội dung
+Xóa media: cân nhắc chặn nếu media đang được tham chiếu (cover/audio).
+11. Bảo mật & phân quyền
+Role gợi ý: ADMIN, 
+MANAGER
+, 
+USER
+.
+ADMIN/
+
+MANAGER
+: CRUD + reorder + visibility.
+USER
+ (admin-side): chỉ xem danh sách/chi tiết.
+Public: chỉ GET các dữ liệu is_visible=true.
+12. Tài liệu thực thi (Execution Document)
+12.1. Deliverables
+Thiết kế DB (migration + seed data mẫu).
+Implement API endpoints (Admin + Public).
+Tài liệu API (Swagger/OpenAPI).
+Test plan + test cases (API + UI tích hợp nếu có).
+Deploy checklist + monitoring.
+12.2. Kế hoạch triển khai theo bước (khuyến nghị)
+Bước 1 - Chốt mô hình dữ liệu: xác nhận 2 cấp danh mục cho nội dung và có/không 2 cấp cho danh mục ca khúc.
+Bước 2 - Migration DB: tạo bảng content_categories, content_items, song_categories, songs, media_assets; thêm index theo (type,parent_id,sort_order), (category_id,sort_order), (is_visible).
+Bước 3 - Seed: tạo sẵn danh mục root cho TRUYEN_THONG và NET_TIEU_BIEU (nếu cần) và 1-2 danh mục con mẫu.
+Bước 4 - Implement Media upload: lưu storage (local/MinIO/S3), trả về url.
+Bước 5 - Implement Admin APIs: CRUD + visibility + reorder cho categories/items/songs.
+Bước 6 - Implement Public APIs: list/detail cho categories/items/songs; áp filter is_visible=true + sort_order asc.
+Bước 7 - Validation & business rules: giới hạn 2 cấp, ràng buộc xóa, ràng buộc audio_url xor audio_media_id.
+Bước 8 - Logging/Audit (tuỳ chọn): ghi lại ai tạo/sửa/xóa, lịch sử publish.
+Bước 9 - Testing: unit test service + integration test API; kiểm thử phân quyền.
+Bước 10 - Deploy: migration chạy an toàn, cấu hình storage, cấu hình CORS, backup DB, giám sát lỗi.
+12.3. Checklist kiểm thử (tóm tắt)
+Danh mục: tạo root/child đúng rule 2 cấp; không cho phép tạo cấp 3.
+Danh mục: reorder đúng scope; sort_order trùng vẫn hiển thị ổn (server nên normalize nếu cần).
+Danh mục: ẩn root -> public không thấy (và không thấy child).
+Nội dung: chỉ gắn vào category child; public chỉ thấy item is_visible=true.
+Ca khúc: upload audio, play/pause ở FE (API cung cấp url); lyric hiển thị đúng.
+Xóa: soft delete; public không truy cập được; admin có thể lọc deleted nếu cần.
+Security: role không đủ quyền bị 403; token invalid bị 401.
+12.4. Gợi ý cấu trúc OpenAPI/Swagger
+Mỗi endpoint cần mô tả: request schema, response schema, mã lỗi, và ví dụ payload. Có thể sinh tự động từ code (NestJS/Express/Spring/.NET) tuỳ stack.

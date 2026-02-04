@@ -1,0 +1,38 @@
+services:
+  mysql:
+    image: mysql:8.3
+    container_name: bcttg-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: bcttg
+      MYSQL_USER: bcttg
+      MYSQL_PASSWORD: bcttg
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    container_name: bcttg-api
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      BCTTG_JWT_SECRET: ChangeMe_AtLeast_32_Chars_Long_Secret
+      BCTTG_MEDIA_ROOT: /data/media
+      BCTTG_MEDIA_BASE_URL: http://localhost:8080
+    ports:
+      - "8080:8080"
+    volumes:
+      - media_data:/data/media
+
+volumes:
+  mysql_data:
+  media_data:
