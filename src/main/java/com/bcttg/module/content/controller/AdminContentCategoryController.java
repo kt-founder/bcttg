@@ -31,8 +31,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/api/v1/admin/content-categories")
+@Tag(name = "Content Categories (Admin)", description = "Quan ly danh muc noi dung")
 public class AdminContentCategoryController {
     private final ContentCategoryService service;
 

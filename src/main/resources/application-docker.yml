@@ -21,6 +21,14 @@ spring:
 app:
   media:
     base-url: ${BCTTG_MEDIA_BASE_URL:http://localhost:8080}
+  swagger:
+    title: BCTTG API
+    description: API tai lieu va thuc thi So tay dien tu
+    version: v1
+    server-url: /
+    contact-name: Support
+    contact-email: support@bcttg.local
+    contact-url: https://bcttg.local
 
 server:
   forward-headers-strategy: framework
@@ -29,5 +37,13 @@ springdoc:
   api-docs:
     path: /api-docs
   swagger-ui:
+    path: /swagger-ui
     url: /api-docs
     config-url: /api-docs/swagger-config
+    display-request-duration: true
+    doc-expansion: none
+    operations-sorter: method
+    tags-sorter: alpha
+    try-it-out-enabled: true
+    persist-authorization: true
+    default-models-expand-depth: -1

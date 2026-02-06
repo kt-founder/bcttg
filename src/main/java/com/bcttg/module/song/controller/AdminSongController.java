@@ -30,8 +30,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/api/v1/admin/songs")
+@Tag(name = "Songs (Admin)", description = "Quan ly ca khuc")
 public class AdminSongController {
     private final SongService service;
 

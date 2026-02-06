@@ -36,8 +36,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/api/v1/admin/content-items")
+@Tag(name = "Content Items (Admin)", description = "Quan ly noi dung")
 public class AdminContentItemController {
     private final ContentItemService service;
     private final MediaService mediaService;

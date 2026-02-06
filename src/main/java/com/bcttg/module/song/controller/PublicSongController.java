@@ -18,8 +18,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/api/v1/public/songs")
+@Tag(name = "Songs (Public)", description = "Danh sach ca khuc cong khai")
 public class PublicSongController {
     private final SongService service;
 

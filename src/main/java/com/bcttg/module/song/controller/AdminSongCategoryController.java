@@ -30,8 +30,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/api/v1/admin/song-categories")
+@Tag(name = "Song Categories (Admin)", description = "Quan ly danh muc ca khuc")
 public class AdminSongCategoryController {
     private final SongCategoryService service;
 

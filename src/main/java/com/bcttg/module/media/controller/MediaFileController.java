@@ -15,7 +15,10 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.servlet.HandlerMapping;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @Controller
+@Tag(name = "Media (Public)", description = "Tai tep media cong khai")
 public class MediaFileController {
     private final MediaService mediaService;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
