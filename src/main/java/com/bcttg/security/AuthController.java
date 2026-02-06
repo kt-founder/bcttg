@@ -31,7 +31,7 @@ public class AuthController {
     @PostMapping("/login")
     public ApiResponse<AuthResponse> login(@Valid @RequestBody AuthRequest request) {
         Authentication authentication = authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
+            new UsernamePasswordAuthenticationToken(request.getPhone(), request.getPassword())
         );
         String token = tokenProvider.generateToken(authentication);
         List<String> roles = authentication.getAuthorities().stream()

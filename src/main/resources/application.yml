@@ -29,16 +29,6 @@ app:
       issuer: bcttg
       secret: ${BCTTG_JWT_SECRET:ChangeMe_AtLeast_32_Chars_Long_Secret}
       access-token-ttl-minutes: 120
-    users:
-      - username: admin
-        password: admin123
-        roles: ["ADMIN"]
-      - username: manager
-        password: manager123
-        roles: ["MANAGER"]
-      - username: user
-        password: user123
-        roles: ["USER"]
   media:
     storage-root: ${BCTTG_MEDIA_ROOT:./storage}
     base-url: ${BCTTG_MEDIA_BASE_URL:http://localhost:8080}
