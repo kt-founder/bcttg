@@ -1,4 +1,4 @@
-﻿package com.bcttg.module.user.repository;
+package com.bcttg.module.user.repository;
 
 import com.bcttg.module.user.entity.UserProfile;
 

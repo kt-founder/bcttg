@@ -1,4 +1,4 @@
-﻿package com.bcttg.module.user.entity;
+package com.bcttg.module.user.entity;
 
 public enum UserRole {
     ADMIN,
