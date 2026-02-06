@@ -18,7 +18,6 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
@@ -38,11 +37,6 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return org.springframework.security.crypto.factory.PasswordEncoderFactories.createDelegatingPasswordEncoder();
-    }
-
-    @Bean
-    public UserDetailsService userDetailsService(com.bcttg.module.user.service.CustomUserDetailsService customUserDetailsService) {
-        return customUserDetailsService;
     }
 
     @Bean
@@ -78,8 +72,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter(UserDetailsService userDetailsService, JwtTokenProvider tokenProvider) {
-        return new JwtAuthenticationFilter(tokenProvider, userDetailsService);
+    public JwtAuthenticationFilter jwtAuthenticationFilter(com.bcttg.module.user.service.CustomUserDetailsService customUserDetailsService, JwtTokenProvider tokenProvider) {
+        return new JwtAuthenticationFilter(tokenProvider, customUserDetailsService);
     }
 
     @Bean
