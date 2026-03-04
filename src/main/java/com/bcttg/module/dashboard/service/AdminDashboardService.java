@@ -3,6 +3,7 @@ package com.bcttg.module.dashboard.service;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -25,6 +26,7 @@ import com.bcttg.module.user.repository.UserAccountRepository;
 
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AdminDashboardService {
@@ -48,6 +50,7 @@ public class AdminDashboardService {
         this.systemAuditLogRepository = systemAuditLogRepository;
     }
 
+    @Transactional(readOnly = true)
     public AdminDashboardResponse getOverview() {
         ZoneId zoneId = ZoneId.systemDefault();
         Instant now = Instant.now();
@@ -145,9 +148,9 @@ public class AdminDashboardService {
 
         Map<LocalDate, Long> totals = new HashMap<>();
         for (Object[] row : systemAuditLogRepository.countGroupedByDate("VIEW", fromTime, toTime)) {
-            java.sql.Date day = (java.sql.Date) row[0];
+            LocalDate day = toLocalDate(row[0], zoneId);
             long count = ((Number) row[1]).longValue();
-            totals.put(day.toLocalDate(), count);
+            totals.put(day, count);
         }
 
         List<AdminDashboardResponse.LabelValueItem> result = new ArrayList<>();
@@ -240,6 +243,28 @@ public class AdminDashboardService {
             case SATURDAY -> "T7";
             case SUNDAY -> "CN";
         };
+    }
+
+    private LocalDate toLocalDate(Object value, ZoneId zoneId) {
+        if (value instanceof LocalDate localDate) {
+            return localDate;
+        }
+        if (value instanceof java.sql.Date sqlDate) {
+            return sqlDate.toLocalDate();
+        }
+        if (value instanceof LocalDateTime localDateTime) {
+            return localDateTime.toLocalDate();
+        }
+        if (value instanceof java.sql.Timestamp timestamp) {
+            return timestamp.toInstant().atZone(zoneId).toLocalDate();
+        }
+        if (value instanceof java.util.Date utilDate) {
+            return utilDate.toInstant().atZone(zoneId).toLocalDate();
+        }
+        if (value instanceof CharSequence text) {
+            return LocalDate.parse(text);
+        }
+        throw new IllegalStateException("Unsupported date value type: " + (value == null ? "null" : value.getClass().getName()));
     }
 
     private record PendingWrapper(AdminDashboardResponse.PendingItem item, Instant createdAt) {
