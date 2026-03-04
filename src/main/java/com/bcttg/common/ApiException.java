@@ -13,14 +13,14 @@ public class ApiException extends RuntimeException {
         super(message);
         this.code = code;
         this.status = status;
-        this.details = null;
+        this.details = List.of();
     }
 
     public ApiException(ErrorCode code, HttpStatus status, String message, List<String> details) {
         super(message);
         this.code = code;
         this.status = status;
-        this.details = details;
+        this.details = details == null ? List.of() : details;
     }
 
     public ErrorCode getCode() {
