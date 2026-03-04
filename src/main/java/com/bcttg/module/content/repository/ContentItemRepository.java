@@ -35,4 +35,16 @@ public interface ContentItemRepository extends JpaRepository<ContentItem, Long>,
 
     @EntityGraph(attributePaths = {"coverMedia", "category"})
     ContentItem findByIdAndIsVisibleTrue(Long id);
+
+    @Query(value = "SELECT MONTH(created_at) AS month_no, COUNT(*) AS total " +
+        "FROM content_items " +
+        "WHERE deleted_at IS NULL AND YEAR(created_at) = :year " +
+        "GROUP BY MONTH(created_at)", nativeQuery = true)
+    java.util.List<Object[]> countCreatedByMonth(@Param("year") int year);
+
+    @Query("select c.type, count(i) from ContentItem i join i.category c where i.deletedAt is null group by c.type")
+    java.util.List<Object[]> countByCategoryType();
+
+    @EntityGraph(attributePaths = {"coverMedia", "category"})
+    java.util.List<ContentItem> findTop5ByDeletedAtIsNullAndIsVisibleFalseOrderByUpdatedAtDesc();
 }

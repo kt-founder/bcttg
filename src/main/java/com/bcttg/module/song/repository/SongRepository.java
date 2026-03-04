@@ -31,4 +31,7 @@ public interface SongRepository extends JpaRepository<Song, Long>, JpaSpecificat
     boolean existsByCategoryAndDeletedAtIsNull(SongCategory category);
 
     boolean existsByAudioMediaAndDeletedAtIsNull(MediaAsset audioMedia);
+
+    @EntityGraph(attributePaths = {"audioMedia", "category"})
+    java.util.List<Song> findTop5ByDeletedAtIsNullAndIsVisibleFalseOrderByUpdatedAtDesc();
 }
