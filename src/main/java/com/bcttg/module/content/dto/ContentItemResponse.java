@@ -3,10 +3,12 @@ package com.bcttg.module.content.dto;
 import java.time.Instant;
 
 import com.bcttg.module.content.entity.ContentItem;
+import com.bcttg.module.content.entity.ContentType;
 import com.bcttg.module.media.dto.MediaResponse;
 
 public class ContentItemResponse {
     private final Long id;
+    private final ContentType type;
     private final Long categoryId;
     private final String title;
     private final String summary;
@@ -21,6 +23,7 @@ public class ContentItemResponse {
 
     public ContentItemResponse(ContentItem item) {
         this.id = item.getId();
+        this.type = item.getCategory() != null ? item.getCategory().getType() : null;
         this.categoryId = item.getCategory() != null ? item.getCategory().getId() : null;
         this.title = item.getTitle();
         this.summary = item.getSummary();
@@ -36,6 +39,10 @@ public class ContentItemResponse {
 
     public Long getId() {
         return id;
+    }
+
+    public ContentType getType() {
+        return type;
     }
 
     public Long getCategoryId() {
