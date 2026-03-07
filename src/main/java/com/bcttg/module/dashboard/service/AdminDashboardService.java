@@ -115,6 +115,7 @@ public class AdminDashboardService {
     private List<AdminDashboardResponse.LabelValueItem> buildDistribution() {
         long truyenThong = 0L;
         long netTieuBieu = 0L;
+        long soDoLichSu = 0L;
         for (Object[] row : contentItemRepository.countByCategoryType()) {
             String type = String.valueOf(row[0]);
             long total = ((Number) row[1]).longValue();
@@ -122,6 +123,8 @@ public class AdminDashboardService {
                 truyenThong = total;
             } else if ("NET_TIEU_BIEU".equals(type)) {
                 netTieuBieu = total;
+            } else if ("SO_DO_LICH_SU".equals(type)) {
+                soDoLichSu = total;
             }
         }
 
@@ -133,6 +136,7 @@ public class AdminDashboardService {
         return List.of(
             new AdminDashboardResponse.LabelValueItem("Truyen thong", truyenThong),
             new AdminDashboardResponse.LabelValueItem("Net tieu bieu", netTieuBieu),
+            new AdminDashboardResponse.LabelValueItem("So do lich su", soDoLichSu),
             new AdminDashboardResponse.LabelValueItem("Ho so thu truong", hoSoThuTruong),
             new AdminDashboardResponse.LabelValueItem("Ho so chien si", hoSoChienSi),
             new AdminDashboardResponse.LabelValueItem("Ho so anh hung", hoSoAnhHung),

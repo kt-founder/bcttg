@@ -28,7 +28,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -51,7 +50,7 @@ public class AdminContentItemController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','USER')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public ApiResponse<List<ContentItemResponse>> list(
         @RequestParam(required = false, name = "category_id") Long categoryId,
         @RequestParam(required = false) ContentType type,
@@ -75,12 +74,12 @@ public class AdminContentItemController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','USER')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public ApiResponse<ContentItemResponse> get(@PathVariable Long id) {
         return ApiResponse.success(new ContentItemResponse(service.getById(id)));
     }
 
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public ApiResponse<ContentItemResponse> update(@PathVariable Long id, @Valid @RequestBody UpdateContentItemRequest request) {
         return ApiResponse.success(new ContentItemResponse(service.update(id, request)));

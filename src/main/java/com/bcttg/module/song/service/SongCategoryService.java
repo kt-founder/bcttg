@@ -102,7 +102,7 @@ public class SongCategoryService {
     @Transactional
     public SongCategory update(Long id, UpdateSongCategoryRequest request) {
         SongCategory category = getById(id);
-        SongCategory parent = null;
+        SongCategory parent = category.getParent();
         if (request.getParentId() != null) {
             parent = getById(request.getParentId());
             if (parent.getParent() != null) {
@@ -113,17 +113,24 @@ public class SongCategoryService {
             }
         }
 
-        SongCategory existing = categoryRepository.findByParentAndSlug(parent, request.getSlug()).orElse(null);
+        String slug = valueOrDefault(request.getSlug(), category.getSlug());
+        SongCategory existing = categoryRepository.findByParentAndSlug(parent, slug).orElse(null);
         if (existing != null && existing.getDeletedAt() == null && !existing.getId().equals(category.getId())) {
             throw new ApiException(ErrorCode.CONFLICT, HttpStatus.CONFLICT, "Slug already exists in scope");
         }
 
         category.setParent(parent);
-        category.setName(request.getName());
-        category.setSlug(request.getSlug());
-        category.setDescription(request.getDescription());
-        category.setIsVisible(request.getIsVisible());
-        category.setSortOrder(request.getSortOrder());
+        category.setName(valueOrDefault(request.getName(), category.getName()));
+        category.setSlug(slug);
+        if (request.getDescription() != null) {
+            category.setDescription(request.getDescription());
+        }
+        if (request.getIsVisible() != null) {
+            category.setIsVisible(request.getIsVisible());
+        }
+        if (request.getSortOrder() != null) {
+            category.setSortOrder(request.getSortOrder());
+        }
         return categoryRepository.save(category);
     }
 
@@ -200,5 +207,9 @@ public class SongCategoryService {
                 .ifPresent(c -> c.setSortOrder(order.getSortOrder()));
         }
         categoryRepository.saveAll(categories);
+    }
+
+    private <T> T valueOrDefault(T requestedValue, T currentValue) {
+        return requestedValue != null ? requestedValue : currentValue;
     }
 }

@@ -24,7 +24,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -43,7 +42,7 @@ public class AdminSongController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','USER')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public ApiResponse<List<SongResponse>> list(
         @RequestParam(required = false, name = "category_id") Long categoryId,
         @RequestParam(required = false) String q,
@@ -66,12 +65,12 @@ public class AdminSongController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','USER')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public ApiResponse<SongResponse> get(@PathVariable Long id) {
         return ApiResponse.success(new SongResponse(service.getById(id)));
     }
 
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public ApiResponse<SongResponse> update(@PathVariable Long id, @Valid @RequestBody UpdateSongRequest request) {
         return ApiResponse.success(new SongResponse(service.update(id, request)));

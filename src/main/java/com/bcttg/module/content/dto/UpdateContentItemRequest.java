@@ -3,21 +3,17 @@ package com.bcttg.module.content.dto;
 import java.time.Instant;
 
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 
 public class UpdateContentItemRequest {
-    @NotNull
     private Long categoryId;
-    @NotBlank
+    @Pattern(regexp = ".*\\S.*", message = "must not be blank")
     private String title;
     private String summary;
-    @NotBlank
+    @Pattern(regexp = ".*\\S.*", message = "must not be blank")
     private String bodyHtml;
     private Long coverMediaId;
-    @NotNull
     private Boolean isVisible;
-    @NotNull
     @Min(0)
     private Integer sortOrder;
     private Instant publishedAt;

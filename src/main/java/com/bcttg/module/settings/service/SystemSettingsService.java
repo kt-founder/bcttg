@@ -62,9 +62,9 @@ public class SystemSettingsService {
 
     @Transactional
     public SystemSettingsResponse update(SystemSettingsRequest request, String actorPhone) {
-        SystemSettings settings = repository.findTopByDeletedAtIsNullOrderByIdAsc().orElseGet(SystemSettings::new);
-        String smtpPass = resolveSmtpPass(settings.getSmtpPass(), request.getSmtpPass());
-        applyWritable(settings, request, smtpPass);
+        SystemSettings settings = repository.findTopByDeletedAtIsNullOrderByIdAsc()
+            .orElseGet(() -> createSettingsFromWritable(defaults));
+        mergeWritable(settings, request);
         settings.setUpdatedBy(actorPhone);
         SystemSettings saved = repository.save(settings);
         auditTrailService.record(actorPhone, "UPDATE", "SETTINGS", "system_settings", "Cap nhat cau hinh he thong");
@@ -177,11 +177,85 @@ public class SystemSettingsService {
         settings.setBackupRetention(writable.getBackupRetention());
     }
 
-    private String resolveSmtpPass(String currentValue, String requestedValue) {
-        if (requestedValue == null || requestedValue.isBlank()) {
-            return currentValue;
+    private void mergeWritable(SystemSettings settings, SystemSettingsRequest request) {
+        if (request.getSystemName() != null) {
+            settings.setSystemName(request.getSystemName());
         }
-        return requestedValue;
+        if (request.getSystemDescription() != null) {
+            settings.setSystemDescription(request.getSystemDescription());
+        }
+        if (request.getTimezone() != null) {
+            settings.setTimezone(request.getTimezone());
+        }
+        if (request.getLanguage() != null) {
+            settings.setLanguage(request.getLanguage());
+        }
+        if (request.getRecordsPerPage() != null) {
+            settings.setRecordsPerPage(request.getRecordsPerPage());
+        }
+        if (request.getShowAvatar() != null) {
+            settings.setShowAvatar(request.getShowAvatar());
+        }
+        if (request.getCompactMode() != null) {
+            settings.setCompactMode(request.getCompactMode());
+        }
+        if (request.getPasswordMinLength() != null) {
+            settings.setPasswordMinLength(request.getPasswordMinLength());
+        }
+        if (request.getRequireUppercase() != null) {
+            settings.setRequireUppercase(request.getRequireUppercase());
+        }
+        if (request.getRequireNumber() != null) {
+            settings.setRequireNumber(request.getRequireNumber());
+        }
+        if (request.getRequireSpecialChar() != null) {
+            settings.setRequireSpecialChar(request.getRequireSpecialChar());
+        }
+        if (request.getSessionTimeout() != null) {
+            settings.setSessionTimeout(request.getSessionTimeout());
+        }
+        if (request.getMaxLoginAttempts() != null) {
+            settings.setMaxLoginAttempts(request.getMaxLoginAttempts());
+        }
+        if (request.getRequire2fa() != null) {
+            settings.setRequire2fa(request.getRequire2fa());
+        }
+        if (request.getSmtpHost() != null) {
+            settings.setSmtpHost(blankToNull(request.getSmtpHost()));
+        }
+        if (request.getSmtpPort() != null) {
+            settings.setSmtpPort(request.getSmtpPort());
+        }
+        if (request.getSmtpUser() != null) {
+            settings.setSmtpUser(blankToNull(request.getSmtpUser()));
+        }
+        if (request.getSmtpPass() != null && !request.getSmtpPass().isBlank()) {
+            settings.setSmtpPass(request.getSmtpPass());
+        }
+        if (request.getEmailFrom() != null) {
+            settings.setEmailFrom(blankToNull(request.getEmailFrom()));
+        }
+        if (request.getNotifyNewLogin() != null) {
+            settings.setNotifyNewLogin(request.getNotifyNewLogin());
+        }
+        if (request.getNotifyPendingContent() != null) {
+            settings.setNotifyPendingContent(request.getNotifyPendingContent());
+        }
+        if (request.getNotifySecurityAlerts() != null) {
+            settings.setNotifySecurityAlerts(request.getNotifySecurityAlerts());
+        }
+        if (request.getNotifyPeriodicReports() != null) {
+            settings.setNotifyPeriodicReports(request.getNotifyPeriodicReports());
+        }
+        if (request.getAutoBackupEnabled() != null) {
+            settings.setAutoBackupEnabled(request.getAutoBackupEnabled());
+        }
+        if (request.getBackupFrequency() != null) {
+            settings.setBackupFrequency(request.getBackupFrequency());
+        }
+        if (request.getBackupRetention() != null) {
+            settings.setBackupRetention(request.getBackupRetention());
+        }
     }
 
     private String blankToNull(String value) {

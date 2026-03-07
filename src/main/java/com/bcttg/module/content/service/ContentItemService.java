@@ -113,24 +113,35 @@ public class ContentItemService {
     @Transactional
     public ContentItem update(Long id, UpdateContentItemRequest request) {
         ContentItem item = getById(id);
-        ContentCategory category = categoryRepository.findById(request.getCategoryId())
-            .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "Content category not found"));
+        ContentCategory category = item.getCategory();
+        if (request.getCategoryId() != null) {
+            category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "Content category not found"));
+        }
         if (category.getParent() == null) {
             throw new ApiException(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST, "Content item must belong to a child category");
         }
-        MediaAsset coverMedia = null;
+        MediaAsset coverMedia = item.getCoverMedia();
         if (request.getCoverMediaId() != null) {
             coverMedia = mediaRepository.findById(request.getCoverMediaId())
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "Cover media not found"));
         }
         item.setCategory(category);
-        item.setTitle(request.getTitle());
-        item.setSummary(request.getSummary());
-        item.setBodyHtml(request.getBodyHtml());
+        item.setTitle(valueOrDefault(request.getTitle(), item.getTitle()));
+        if (request.getSummary() != null) {
+            item.setSummary(request.getSummary());
+        }
+        item.setBodyHtml(valueOrDefault(request.getBodyHtml(), item.getBodyHtml()));
         item.setCoverMedia(coverMedia);
-        item.setIsVisible(request.getIsVisible());
-        item.setSortOrder(request.getSortOrder());
-        item.setPublishedAt(request.getPublishedAt());
+        if (request.getIsVisible() != null) {
+            item.setIsVisible(request.getIsVisible());
+        }
+        if (request.getSortOrder() != null) {
+            item.setSortOrder(request.getSortOrder());
+        }
+        if (request.getPublishedAt() != null) {
+            item.setPublishedAt(request.getPublishedAt());
+        }
         return itemRepository.save(item);
     }
 
@@ -181,5 +192,9 @@ public class ContentItemService {
         ContentItem item = getVisibleById(id);
         item.setViewCount(item.getViewCount() + 1);
         return itemRepository.save(item);
+    }
+
+    private <T> T valueOrDefault(T requestedValue, T currentValue) {
+        return requestedValue != null ? requestedValue : currentValue;
     }
 }

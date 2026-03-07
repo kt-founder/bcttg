@@ -26,7 +26,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -45,7 +44,7 @@ public class AdminDataProfileController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','USER')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public ApiResponse<List<DataProfileResponse>> list(
         @RequestParam(required = false) ProfileType profileType,
         @RequestParam(required = false) String q,
@@ -69,12 +68,12 @@ public class AdminDataProfileController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','USER')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public ApiResponse<DataProfileResponse> get(@PathVariable Long id) {
         return ApiResponse.success(new DataProfileResponse(service.getById(id)));
     }
 
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public ApiResponse<DataProfileResponse> update(@PathVariable Long id, @Valid @RequestBody UpdateDataProfileRequest request) {
         return ApiResponse.success(new DataProfileResponse(service.update(id, request)));

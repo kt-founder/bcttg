@@ -1,21 +1,18 @@
 package com.bcttg.module.song.dto;
 
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 
 public class UpdateSongRequest {
     private Long categoryId;
-    @NotBlank
+    @Pattern(regexp = ".*\\S.*", message = "must not be blank")
     private String title;
-    @NotBlank
+    @Pattern(regexp = ".*\\S.*", message = "must not be blank")
     private String lyric;
     private Long audioMediaId;
     private String audioUrl;
     private Integer durationSec;
-    @NotNull
     private Boolean isVisible;
-    @NotNull
     @Min(0)
     private Integer sortOrder;
 

@@ -6,6 +6,7 @@ import com.bcttg.common.ApiResponse;
 import com.bcttg.module.home.dto.HomeModuleResponse;
 import com.bcttg.module.home.service.HomeModuleService;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,6 +24,7 @@ public class PublicHomeModuleController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','USER')")
     public ApiResponse<List<HomeModuleResponse>> list() {
         return ApiResponse.success(service.getPublicModules());
     }

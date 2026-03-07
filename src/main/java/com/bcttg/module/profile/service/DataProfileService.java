@@ -101,18 +101,25 @@ public class DataProfileService {
     @Transactional
     public DataProfile update(Long id, UpdateDataProfileRequest request) {
         DataProfile profile = getById(id);
-        MediaAsset avatarMedia = null;
+        MediaAsset avatarMedia = profile.getAvatarMedia();
         if (request.getAvatarMediaId() != null) {
             avatarMedia = mediaRepository.findById(request.getAvatarMediaId())
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "Avatar media not found"));
         }
 
-        applyCreateOrUpdate(profile, request.getProfileType(), request.getFullName(), request.getPosition(),
-            request.getUnitName(), request.getRankName(), request.getHeroTitle(), request.getContactPhone(),
-            request.getBirthDate(), request.getHometown(), request.getSummary(), request.getBiography(),
-            request.getAchievements(), avatarMedia);
-        profile.setIsVisible(request.getIsVisible());
-        profile.setSortOrder(request.getSortOrder());
+        applyCreateOrUpdate(profile, valueOrDefault(request.getProfileType(), profile.getProfileType()), valueOrDefault(request.getFullName(), profile.getFullName()),
+            valueOrDefault(request.getPosition(), profile.getPosition()), valueOrDefault(request.getUnitName(), profile.getUnitName()),
+            valueOrDefault(request.getRankName(), profile.getRankName()), valueOrDefault(request.getHeroTitle(), profile.getHeroTitle()),
+            valueOrDefault(request.getContactPhone(), profile.getContactPhone()), valueOrDefault(request.getBirthDate(), profile.getBirthDate()),
+            valueOrDefault(request.getHometown(), profile.getHometown()), valueOrDefault(request.getSummary(), profile.getSummary()),
+            valueOrDefault(request.getBiography(), profile.getBiography()),
+            valueOrDefault(request.getAchievements(), profile.getAchievements()), avatarMedia);
+        if (request.getIsVisible() != null) {
+            profile.setIsVisible(request.getIsVisible());
+        }
+        if (request.getSortOrder() != null) {
+            profile.setSortOrder(request.getSortOrder());
+        }
         return repository.save(profile);
     }
 
@@ -188,5 +195,9 @@ public class DataProfileService {
         profile.setBiography(biography);
         profile.setAchievements(achievements);
         profile.setAvatarMedia(avatarMedia);
+    }
+
+    private <T> T valueOrDefault(T requestedValue, T currentValue) {
+        return requestedValue != null ? requestedValue : currentValue;
     }
 }

@@ -35,7 +35,7 @@ public class AdminMediaController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','USER')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public ApiResponse<MediaResponse> get(@PathVariable Long id) {
         return ApiResponse.success(new MediaResponse(mediaService.getById(id)));
     }

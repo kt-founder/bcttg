@@ -5,14 +5,12 @@ import java.time.LocalDate;
 import com.bcttg.module.profile.entity.ProfileType;
 
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 
 public class UpdateDataProfileRequest {
-    @NotNull
     private ProfileType profileType;
 
-    @NotBlank
+    @Pattern(regexp = ".*\\S.*", message = "must not be blank")
     private String fullName;
 
     private String position;
@@ -27,10 +25,8 @@ public class UpdateDataProfileRequest {
     private String achievements;
     private Long avatarMediaId;
 
-    @NotNull
     private Boolean isVisible;
 
-    @NotNull
     @Min(0)
     private Integer sortOrder;
 

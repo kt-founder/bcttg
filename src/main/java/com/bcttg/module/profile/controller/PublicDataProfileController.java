@@ -13,6 +13,7 @@ import com.bcttg.module.profile.service.DataProfileService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,6 +33,7 @@ public class PublicDataProfileController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','USER')")
     public ApiResponse<List<DataProfileResponse>> list(
         @RequestParam(required = false) ProfileType profileType,
         @RequestParam(required = false) String q,
@@ -47,6 +49,7 @@ public class PublicDataProfileController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','USER')")
     public ApiResponse<DataProfileResponse> get(@PathVariable Long id) {
         return ApiResponse.success(new DataProfileResponse(service.getVisibleById(id)));
     }

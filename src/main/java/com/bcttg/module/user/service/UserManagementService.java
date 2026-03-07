@@ -3,6 +3,7 @@ package com.bcttg.module.user.service;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -11,6 +12,7 @@ import com.bcttg.common.ApiException;
 import com.bcttg.common.ErrorCode;
 import com.bcttg.module.user.dto.CreateUserRequest;
 import com.bcttg.module.user.dto.UpdateUserRequest;
+import com.bcttg.module.user.dto.UpdateUserProfilePayload;
 import com.bcttg.module.user.dto.UserAdminResponse;
 import com.bcttg.module.user.dto.UserProfilePayload;
 import com.bcttg.module.user.entity.UserAccount;
@@ -99,32 +101,40 @@ public class UserManagementService {
     @Transactional
     public UserAdminResponse update(Long id, UpdateUserRequest request, String actorPhone) {
         UserAccount account = getAccountById(id);
+        String phone = valueOrDefault(request.getPhone(), account.getPhone());
+        UserRole role = valueOrDefault(request.getRole(), account.getRole());
+        boolean isActive = valueOrDefault(request.getIsActive(), account.getIsActive());
 
-        if (!account.getPhone().equals(request.getPhone())
-            && userAccountRepository.existsByPhoneAndDeletedAtIsNullAndIdNot(request.getPhone(), id)) {
+        if (!account.getPhone().equals(phone)
+            && userAccountRepository.existsByPhoneAndDeletedAtIsNullAndIdNot(phone, id)) {
             throw new ApiException(ErrorCode.CONFLICT, HttpStatus.CONFLICT, "Phone already exists");
         }
-        if (isSelf(account, actorPhone) && account.getRole() == UserRole.ADMIN && request.getRole() != UserRole.ADMIN) {
+        if (isSelf(account, actorPhone) && account.getRole() == UserRole.ADMIN && role != UserRole.ADMIN) {
             throw new ApiException(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN, "Cannot downgrade your own admin role");
         }
-        if (isSelf(account, actorPhone) && !request.getIsActive()) {
+        if (isSelf(account, actorPhone) && !isActive) {
             throw new ApiException(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN, "Cannot deactivate your own account");
         }
 
-        account.setPhone(request.getPhone());
-        account.setRole(request.getRole());
-        account.setIsActive(request.getIsActive());
+        account.setPhone(phone);
+        account.setRole(role);
+        account.setIsActive(isActive);
         account = userAccountRepository.save(account);
         UserAccount savedAccount = account;
 
-        UserProfile profile = userProfileRepository.findByUserIdAndDeletedAtIsNull(id)
-            .orElseGet(() -> {
-                UserProfile created = new UserProfile();
-                created.setUser(savedAccount);
-                return created;
-            });
-        applyProfile(profile, request.getProfile());
-        profile = userProfileRepository.save(profile);
+        Optional<UserProfile> existingProfile = userProfileRepository.findByUserIdAndDeletedAtIsNull(id);
+        UserProfile profile = existingProfile.orElse(null);
+        if (request.getProfile() != null) {
+            if (profile == null) {
+                profile = new UserProfile();
+                profile.setUser(savedAccount);
+            }
+            applyProfilePatch(profile, request.getProfile());
+            if (profile.getFullName() == null || profile.getFullName().isBlank()) {
+                throw new ApiException(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST, "Profile fullName is required");
+            }
+            profile = userProfileRepository.save(profile);
+        }
 
         return new UserAdminResponse(account, profile);
     }
@@ -225,6 +235,30 @@ public class UserManagementService {
         profile.setBirthDate(payload.getBirthDate());
     }
 
+    private void applyProfilePatch(UserProfile profile, UpdateUserProfilePayload payload) {
+        if (payload.getFullName() != null) {
+            profile.setFullName(payload.getFullName());
+        }
+        if (payload.getPosition() != null) {
+            profile.setPosition(payload.getPosition());
+        }
+        if (payload.getUnitName() != null) {
+            profile.setUnitName(payload.getUnitName());
+        }
+        if (payload.getRankName() != null) {
+            profile.setRankName(payload.getRankName());
+        }
+        if (payload.getEmail() != null) {
+            profile.setEmail(payload.getEmail());
+        }
+        if (payload.getAddress() != null) {
+            profile.setAddress(payload.getAddress());
+        }
+        if (payload.getBirthDate() != null) {
+            profile.setBirthDate(payload.getBirthDate());
+        }
+    }
+
     private void validatePasswordStrength(String password) {
         if (password == null || password.length() < 8) {
             throw new ApiException(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST, "Password must be at least 8 characters");
@@ -238,5 +272,9 @@ public class UserManagementService {
                 "Password must include uppercase, lowercase and digit"
             );
         }
+    }
+
+    private <T> T valueOrDefault(T requestedValue, T currentValue) {
+        return requestedValue != null ? requestedValue : currentValue;
     }
 }

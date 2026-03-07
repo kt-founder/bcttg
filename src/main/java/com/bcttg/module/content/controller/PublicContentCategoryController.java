@@ -13,6 +13,7 @@ import com.bcttg.module.content.service.ContentCategoryService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,6 +33,7 @@ public class PublicContentCategoryController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','USER')")
     public ApiResponse<List<ContentCategoryResponse>> list(
         @RequestParam(required = false) ContentType type,
         @RequestParam(required = false, name = "parent_id") Long parentId,
@@ -48,6 +50,7 @@ public class PublicContentCategoryController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','USER')")
     public ApiResponse<ContentCategoryResponse> get(@PathVariable Long id) {
         return ApiResponse.success(new ContentCategoryResponse(service.getVisibleById(id)));
     }

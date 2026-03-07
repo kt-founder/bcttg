@@ -12,6 +12,7 @@ import com.bcttg.module.song.service.SongCategoryService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,6 +32,7 @@ public class PublicSongCategoryController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','USER')")
     public ApiResponse<List<SongCategoryResponse>> list(
         @RequestParam(required = false, name = "parent_id") Long parentId,
         @RequestParam(required = false) String q,
@@ -46,6 +48,7 @@ public class PublicSongCategoryController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','USER')")
     public ApiResponse<SongCategoryResponse> get(@PathVariable Long id) {
         return ApiResponse.success(new SongCategoryResponse(service.getVisibleById(id)));
     }

@@ -4,67 +4,55 @@ import com.bcttg.module.settings.SystemSettingsWritable;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public class SystemSettingsRequest implements SystemSettingsWritable {
-    @NotBlank
+    @Pattern(regexp = ".*\\S.*", message = "must not be blank")
     @Size(max = 200)
     private String systemName;
 
     private String systemDescription;
 
-    @NotBlank
+    @Pattern(regexp = ".*\\S.*", message = "must not be blank")
     @Size(max = 100)
     private String timezone;
 
-    @NotBlank
+    @Pattern(regexp = ".*\\S.*", message = "must not be blank")
     @Size(max = 20)
     private String language;
 
-    @NotNull
     @Min(1)
     @Max(200)
     private Integer recordsPerPage;
 
-    @NotNull
     private Boolean showAvatar;
 
-    @NotNull
     private Boolean compactMode;
 
-    @NotNull
     @Min(6)
     @Max(72)
     private Integer passwordMinLength;
 
-    @NotNull
     private Boolean requireUppercase;
 
-    @NotNull
     private Boolean requireNumber;
 
-    @NotNull
     private Boolean requireSpecialChar;
 
-    @NotNull
     @Min(5)
     @Max(1440)
     private Integer sessionTimeout;
 
-    @NotNull
     @Min(1)
     @Max(20)
     private Integer maxLoginAttempts;
 
-    @NotNull
     private Boolean require2fa;
 
     @Size(max = 200)
     private String smtpHost;
 
-    @NotNull
     @Min(1)
     @Max(65535)
     private Integer smtpPort;
@@ -78,26 +66,20 @@ public class SystemSettingsRequest implements SystemSettingsWritable {
     @Size(max = 200)
     private String emailFrom;
 
-    @NotNull
     private Boolean notifyNewLogin;
 
-    @NotNull
     private Boolean notifyPendingContent;
 
-    @NotNull
     private Boolean notifySecurityAlerts;
 
-    @NotNull
     private Boolean notifyPeriodicReports;
 
-    @NotNull
     private Boolean autoBackupEnabled;
 
-    @NotBlank
+    @Pattern(regexp = ".*\\S.*", message = "must not be blank")
     @Size(max = 20)
     private String backupFrequency;
 
-    @NotNull
     @Min(1)
     @Max(365)
     private Integer backupRetention;

@@ -106,26 +106,43 @@ public class SongService {
     @Transactional
     public Song update(Long id, UpdateSongRequest request) {
         Song song = getById(id);
-        SongCategory category = null;
+        SongCategory category = song.getCategory();
         if (request.getCategoryId() != null) {
             category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "Song category not found"));
         }
-        MediaAsset audioMedia = null;
-        if (request.getAudioMediaId() != null) {
+        MediaAsset audioMedia = song.getAudioMedia();
+        String audioUrl = song.getAudioUrl();
+        if (request.getAudioMediaId() != null || request.getAudioUrl() != null) {
+            validateAudioSource(request.getAudioMediaId(), request.getAudioUrl());
+            if (request.getAudioMediaId() != null) {
+                audioMedia = mediaRepository.findById(request.getAudioMediaId())
+                    .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "Audio media not found"));
+                audioUrl = null;
+            } else {
+                audioMedia = null;
+                audioUrl = request.getAudioUrl();
+            }
+        }
+        if (request.getAudioMediaId() != null && audioMedia == null) {
             audioMedia = mediaRepository.findById(request.getAudioMediaId())
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "Audio media not found"));
         }
-        validateAudioSource(request.getAudioMediaId(), request.getAudioUrl());
 
         song.setCategory(category);
-        song.setTitle(request.getTitle());
-        song.setLyric(request.getLyric());
+        song.setTitle(valueOrDefault(request.getTitle(), song.getTitle()));
+        song.setLyric(valueOrDefault(request.getLyric(), song.getLyric()));
         song.setAudioMedia(audioMedia);
-        song.setAudioUrl(request.getAudioUrl());
-        song.setDurationSec(request.getDurationSec());
-        song.setIsVisible(request.getIsVisible());
-        song.setSortOrder(request.getSortOrder());
+        song.setAudioUrl(audioUrl);
+        if (request.getDurationSec() != null) {
+            song.setDurationSec(request.getDurationSec());
+        }
+        if (request.getIsVisible() != null) {
+            song.setIsVisible(request.getIsVisible());
+        }
+        if (request.getSortOrder() != null) {
+            song.setSortOrder(request.getSortOrder());
+        }
         return songRepository.save(song);
     }
 
@@ -184,5 +201,9 @@ public class SongService {
         if (hasMedia == hasUrl) {
             throw new ApiException(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST, "Provide exactly one of audio_media_id or audio_url");
         }
+    }
+
+    private <T> T valueOrDefault(T requestedValue, T currentValue) {
+        return requestedValue != null ? requestedValue : currentValue;
     }
 }

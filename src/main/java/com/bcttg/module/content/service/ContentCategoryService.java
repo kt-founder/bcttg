@@ -111,7 +111,7 @@ public class ContentCategoryService {
     public ContentCategory update(Long id, UpdateContentCategoryRequest request) {
         ContentCategory category = getById(id);
 
-        ContentCategory parent = null;
+        ContentCategory parent = category.getParent();
         if (request.getParentId() != null) {
             parent = getById(request.getParentId());
             if (parent.getParent() != null) {
@@ -125,17 +125,24 @@ public class ContentCategoryService {
             }
         }
 
-        ContentCategory existing = categoryRepository.findByTypeAndParentAndSlug(category.getType(), parent, request.getSlug()).orElse(null);
+        String slug = valueOrDefault(request.getSlug(), category.getSlug());
+        ContentCategory existing = categoryRepository.findByTypeAndParentAndSlug(category.getType(), parent, slug).orElse(null);
         if (existing != null && existing.getDeletedAt() == null && !existing.getId().equals(category.getId())) {
             throw new ApiException(ErrorCode.CONFLICT, HttpStatus.CONFLICT, "Slug already exists in scope");
         }
 
         category.setParent(parent);
-        category.setName(request.getName());
-        category.setSlug(request.getSlug());
-        category.setDescription(request.getDescription());
-        category.setIsVisible(request.getIsVisible());
-        category.setSortOrder(request.getSortOrder());
+        category.setName(valueOrDefault(request.getName(), category.getName()));
+        category.setSlug(slug);
+        if (request.getDescription() != null) {
+            category.setDescription(request.getDescription());
+        }
+        if (request.getIsVisible() != null) {
+            category.setIsVisible(request.getIsVisible());
+        }
+        if (request.getSortOrder() != null) {
+            category.setSortOrder(request.getSortOrder());
+        }
         return categoryRepository.save(category);
     }
 
@@ -215,5 +222,9 @@ public class ContentCategoryService {
                 .ifPresent(c -> c.setSortOrder(order.getSortOrder()));
         }
         categoryRepository.saveAll(categories);
+    }
+
+    private <T> T valueOrDefault(T requestedValue, T currentValue) {
+        return requestedValue != null ? requestedValue : currentValue;
     }
 }
