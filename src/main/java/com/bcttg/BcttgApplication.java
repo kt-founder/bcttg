@@ -5,10 +5,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 import com.bcttg.module.media.MediaProperties;
+import com.bcttg.module.settings.SystemSettingsDefaultsProperties;
 import com.bcttg.security.SecurityProperties;
 
 @SpringBootApplication
-@EnableConfigurationProperties({SecurityProperties.class, MediaProperties.class})
+@EnableConfigurationProperties({SecurityProperties.class, MediaProperties.class, SystemSettingsDefaultsProperties.class})
 public class BcttgApplication {
 
     public static void main(String[] args) {

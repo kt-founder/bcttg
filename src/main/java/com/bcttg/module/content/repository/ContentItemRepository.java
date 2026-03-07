@@ -45,6 +45,9 @@ public interface ContentItemRepository extends JpaRepository<ContentItem, Long>,
     @Query("select c.type, count(i) from ContentItem i join i.category c where i.deletedAt is null group by c.type")
     java.util.List<Object[]> countByCategoryType();
 
+    @Query("select count(i) from ContentItem i join i.category c where i.deletedAt is null and i.isVisible = true and c.type = :type")
+    long countVisibleByCategoryType(@Param("type") com.bcttg.module.content.entity.ContentType type);
+
     @EntityGraph(attributePaths = {"coverMedia", "category"})
     java.util.List<ContentItem> findTop5ByDeletedAtIsNullAndIsVisibleFalseOrderByUpdatedAtDesc();
 }

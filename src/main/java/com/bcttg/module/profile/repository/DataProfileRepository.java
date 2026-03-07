@@ -29,6 +29,8 @@ public interface DataProfileRepository extends JpaRepository<DataProfile, Long>,
 
     long countByDeletedAtIsNullAndProfileType(ProfileType profileType);
 
+    long countByDeletedAtIsNullAndIsVisibleTrueAndProfileType(ProfileType profileType);
+
     @EntityGraph(attributePaths = {"avatarMedia"})
     List<DataProfile> findTop5ByDeletedAtIsNullAndIsVisibleFalseOrderByUpdatedAtDesc();
 }
