@@ -5,7 +5,10 @@ import java.util.stream.Collectors;
 
 import jakarta.validation.ConstraintViolationException;
 
+import org.hibernate.exception.SQLGrammarException;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -17,6 +20,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,18 +84,60 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiResponse<Void>> handleDataConflict(DataIntegrityViolationException ex) {
-        ApiError error = new ApiError(ErrorCode.CONFLICT.name(), "Data conflict", List.of());
+        ApiError error = new ApiError(ErrorCode.CONFLICT.name(), "Data conflict", List.of(mostSpecificMessage(ex)));
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(error));
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
+        String detail = ex.getSupportedHttpMethods() == null || ex.getSupportedHttpMethods().isEmpty()
+            ? "Supported methods are not available"
+            : "Supported methods: " + ex.getSupportedHttpMethods();
+        ApiError error = new ApiError(
+            ErrorCode.METHOD_NOT_ALLOWED.name(),
+            "Request method is not supported for this endpoint",
+            List.of(detail)
+        );
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(ApiResponse.error(error));
+    }
+
+    @ExceptionHandler({InvalidDataAccessResourceUsageException.class, SQLGrammarException.class})
+    public ResponseEntity<ApiResponse<Void>> handleSqlGrammar(Exception ex) {
+        ApiError error = new ApiError(
+            ErrorCode.INTERNAL_ERROR.name(),
+            "Database schema mismatch or invalid SQL",
+            List.of(mostSpecificMessage(ex))
+        );
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error(error));
+    }
+
+    @ExceptionHandler(DataAccessException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataAccess(DataAccessException ex) {
+        ApiError error = new ApiError(
+            ErrorCode.INTERNAL_ERROR.name(),
+            "Database access error",
+            List.of(mostSpecificMessage(ex))
+        );
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error(error));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleUnhandled(Exception ex) {
         log.error("Unhandled exception", ex);
-        ApiError error = new ApiError(ErrorCode.INTERNAL_ERROR.name(), "Unexpected error", List.of());
+        ApiError error = new ApiError(ErrorCode.INTERNAL_ERROR.name(), "Unexpected error", List.of(mostSpecificMessage(ex)));
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error(error));
     }
 
     private String formatFieldError(FieldError error) {
         return error.getField() + ": " + error.getDefaultMessage();
+    }
+
+    private String mostSpecificMessage(Throwable throwable) {
+        Throwable current = throwable;
+        while (current.getCause() != null && current.getCause() != current) {
+            current = current.getCause();
+        }
+        String message = current.getMessage();
+        return message == null || message.isBlank() ? throwable.getClass().getSimpleName() : message;
     }
 }

@@ -52,7 +52,7 @@ public class SystemSettings extends BaseEntity {
     @Column(nullable = false)
     private Integer maxLoginAttempts;
 
-    @Column(nullable = false)
+    @Column(name = "require_2fa", nullable = false)
     private Boolean require2fa;
 
     @Column(length = 200)
