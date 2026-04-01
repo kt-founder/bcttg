@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import com.bcttg.common.ApiException;
 import com.bcttg.common.ErrorCode;
+import com.bcttg.module.dashboard.service.SystemAuditTrailService;
 import com.bcttg.module.user.dto.CreateUserRequest;
 import com.bcttg.module.user.dto.UpdateUserRequest;
 import com.bcttg.module.user.dto.UpdateUserProfilePayload;
@@ -40,15 +41,18 @@ public class UserManagementService {
     private final UserAccountRepository userAccountRepository;
     private final UserProfileRepository userProfileRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SystemAuditTrailService auditTrailService;
 
     public UserManagementService(
         UserAccountRepository userAccountRepository,
         UserProfileRepository userProfileRepository,
-        PasswordEncoder passwordEncoder
+        PasswordEncoder passwordEncoder,
+        SystemAuditTrailService auditTrailService
     ) {
         this.userAccountRepository = userAccountRepository;
         this.userProfileRepository = userProfileRepository;
         this.passwordEncoder = passwordEncoder;
+        this.auditTrailService = auditTrailService;
     }
 
     @Transactional(readOnly = true)
@@ -76,8 +80,19 @@ public class UserManagementService {
         return new UserAdminResponse(account, profile);
     }
 
+    @Transactional(readOnly = true)
+    public UserAdminResponse getCurrentUser(String actorPhone) {
+        if (actorPhone == null || actorPhone.isBlank()) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED, HttpStatus.UNAUTHORIZED, "Unauthorized");
+        }
+        UserAccount account = userAccountRepository.findByPhoneAndDeletedAtIsNull(actorPhone)
+            .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "User not found"));
+        UserProfile profile = userProfileRepository.findByUserIdAndDeletedAtIsNull(account.getId()).orElse(null);
+        return new UserAdminResponse(account, profile);
+    }
+
     @Transactional
-    public UserAdminResponse create(CreateUserRequest request) {
+    public UserAdminResponse create(CreateUserRequest request, String actorPhone) {
         if (userAccountRepository.existsByPhoneAndDeletedAtIsNull(request.getPhone())) {
             throw new ApiException(ErrorCode.CONFLICT, HttpStatus.CONFLICT, "Phone already exists");
         }
@@ -95,6 +110,7 @@ public class UserManagementService {
         applyProfile(profile, request.getProfile());
         profile = userProfileRepository.save(profile);
 
+        auditTrailService.record(actorPhone, "CREATE", "USER", account.getPhone(), "tạo tài khoản “" + account.getPhone() + "”");
         return new UserAdminResponse(account, profile);
     }
 
@@ -136,6 +152,7 @@ public class UserManagementService {
             profile = userProfileRepository.save(profile);
         }
 
+        auditTrailService.record(actorPhone, "UPDATE", "USER", account.getPhone(), "chỉnh sửa tài khoản “" + account.getPhone() + "”");
         return new UserAdminResponse(account, profile);
     }
 
@@ -148,6 +165,7 @@ public class UserManagementService {
         account.setIsActive(value);
         account = userAccountRepository.save(account);
         UserProfile profile = userProfileRepository.findByUserIdAndDeletedAtIsNull(id).orElse(null);
+        auditTrailService.record(actorPhone, "UPDATE", "USER", account.getPhone(), value ? "mở hoạt động cho tài khoản “" + account.getPhone() + "”" : "khóa tài khoản “" + account.getPhone() + "”");
         return new UserAdminResponse(account, profile);
     }
 
@@ -160,15 +178,17 @@ public class UserManagementService {
         account.setRole(role);
         account = userAccountRepository.save(account);
         UserProfile profile = userProfileRepository.findByUserIdAndDeletedAtIsNull(id).orElse(null);
+        auditTrailService.record(actorPhone, "UPDATE", "USER", account.getPhone(), "cập nhật quyền cho tài khoản “" + account.getPhone() + "”");
         return new UserAdminResponse(account, profile);
     }
 
     @Transactional
-    public void resetPassword(Long id, String newPassword) {
+    public void resetPassword(Long id, String newPassword, String actorPhone) {
         validatePasswordStrength(newPassword);
         UserAccount account = getAccountById(id);
         account.setPasswordHash(passwordEncoder.encode(newPassword));
         userAccountRepository.save(account);
+        auditTrailService.record(actorPhone, "UPDATE", "USER", account.getPhone(), "cấp lại mật khẩu cho tài khoản “" + account.getPhone() + "”");
     }
 
     @Transactional
@@ -177,8 +197,10 @@ public class UserManagementService {
         if (isSelf(account, actorPhone)) {
             throw new ApiException(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN, "Cannot delete your own account");
         }
+        String phone = account.getPhone();
         userProfileRepository.findByUserIdAndDeletedAtIsNull(id).ifPresent(userProfileRepository::delete);
         userAccountRepository.delete(account);
+        auditTrailService.record(actorPhone, "DELETE", "USER", phone, "xóa tài khoản “" + phone + "”");
     }
 
     private Specification<UserAccount> notDeleted() {

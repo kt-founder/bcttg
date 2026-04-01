@@ -19,6 +19,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -61,8 +62,8 @@ public class AdminSongController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public ApiResponse<SongResponse> create(@Valid @RequestBody CreateSongRequest request) {
-        return ApiResponse.success(new SongResponse(service.create(request)));
+    public ApiResponse<SongResponse> create(@Valid @RequestBody CreateSongRequest request, Authentication authentication) {
+        return ApiResponse.success(new SongResponse(service.create(request, actorPhone(authentication))));
     }
 
     @GetMapping("/{id}")
@@ -73,27 +74,31 @@ public class AdminSongController {
 
     @RequestMapping(path = "/{id}", method = {RequestMethod.PATCH, RequestMethod.PUT})
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public ApiResponse<SongResponse> update(@PathVariable Long id, @Valid @RequestBody UpdateSongRequest request) {
-        return ApiResponse.success(new SongResponse(service.update(id, request)));
+    public ApiResponse<SongResponse> update(@PathVariable Long id, @Valid @RequestBody UpdateSongRequest request, Authentication authentication) {
+        return ApiResponse.success(new SongResponse(service.update(id, request, actorPhone(authentication))));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public ApiResponse<Void> delete(@PathVariable Long id) {
-        service.delete(id);
+    public ApiResponse<Void> delete(@PathVariable Long id, Authentication authentication) {
+        service.delete(id, actorPhone(authentication));
         return ApiResponse.success(null);
     }
 
     @PatchMapping("/{id}/visibility")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public ApiResponse<SongResponse> updateVisibility(@PathVariable Long id, @Valid @RequestBody VisibilityRequest request) {
-        return ApiResponse.success(new SongResponse(service.updateVisibility(id, request.getIsVisible())));
+    public ApiResponse<SongResponse> updateVisibility(@PathVariable Long id, @Valid @RequestBody VisibilityRequest request, Authentication authentication) {
+        return ApiResponse.success(new SongResponse(service.updateVisibility(id, request.getIsVisible(), actorPhone(authentication))));
     }
 
     @PatchMapping("/reorder")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public ApiResponse<Void> reorder(@Valid @RequestBody ReorderSongRequest request) {
-        service.reorder(request);
+    public ApiResponse<Void> reorder(@Valid @RequestBody ReorderSongRequest request, Authentication authentication) {
+        service.reorder(request, actorPhone(authentication));
         return ApiResponse.success(null);
+    }
+
+    private String actorPhone(Authentication authentication) {
+        return authentication != null ? authentication.getName() : null;
     }
 }

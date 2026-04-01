@@ -89,7 +89,7 @@ public class ContentItemService {
     }
 
     @Transactional
-    public ContentItem create(CreateContentItemRequest request) {
+    public ContentItem create(CreateContentItemRequest request, String actorPhone) {
         ContentCategory category = categoryRepository.findById(request.getCategoryId())
             .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "Content category not found"));
         if (category.getParent() == null) {
@@ -115,11 +115,13 @@ public class ContentItemService {
         }
         item.setSortOrder(sortOrder);
         item.setPublishedAt(request.getPublishedAt());
-        return itemRepository.save(item);
+        ContentItem saved = itemRepository.save(item);
+        auditTrailService.record(actorPhone, "CREATE", "CONTENT", saved.getTitle(), "tạo nội dung “" + saved.getTitle() + "”");
+        return saved;
     }
 
     @Transactional
-    public ContentItem update(Long id, UpdateContentItemRequest request) {
+    public ContentItem update(Long id, UpdateContentItemRequest request, String actorPhone) {
         ContentItem item = getById(id);
         ContentCategory category = item.getCategory();
         if (request.getCategoryId() != null) {
@@ -150,24 +152,31 @@ public class ContentItemService {
         if (request.getPublishedAt() != null) {
             item.setPublishedAt(request.getPublishedAt());
         }
-        return itemRepository.save(item);
+        ContentItem saved = itemRepository.save(item);
+        auditTrailService.record(actorPhone, "UPDATE", "CONTENT", saved.getTitle(), "chỉnh sửa nội dung “" + saved.getTitle() + "”");
+        return saved;
     }
 
     @Transactional
-    public void delete(Long id) {
+    public void delete(Long id, String actorPhone) {
         ContentItem item = getById(id);
+        String title = item.getTitle();
         itemRepository.delete(item);
+        auditTrailService.record(actorPhone, "DELETE", "CONTENT", title, "xóa nội dung “" + title + "”");
     }
 
     @Transactional
-    public ContentItem updateVisibility(Long id, boolean isVisible) {
+    public ContentItem updateVisibility(Long id, boolean isVisible, String actorPhone) {
         ContentItem item = getById(id);
         item.setIsVisible(isVisible);
-        return itemRepository.save(item);
+        ContentItem saved = itemRepository.save(item);
+        String phrase = isVisible ? "hiển thị nội dung “" + saved.getTitle() + "”" : "ẩn nội dung “" + saved.getTitle() + "”";
+        auditTrailService.record(actorPhone, "UPDATE", "CONTENT", saved.getTitle(), phrase);
+        return saved;
     }
 
     @Transactional
-    public void reorder(ReorderContentItemRequest request) {
+    public void reorder(ReorderContentItemRequest request, String actorPhone) {
         if (request.getOrders() == null || request.getOrders().isEmpty()) {
             throw new ApiException(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST, "Orders cannot be empty");
         }
@@ -193,6 +202,7 @@ public class ContentItemService {
                 .ifPresent(i -> i.setSortOrder(order.getSortOrder()));
         }
         itemRepository.saveAll(items);
+        auditTrailService.record(actorPhone, "UPDATE", "CONTENT", category.getName(), "sắp xếp lại nội dung của danh mục “" + category.getName() + "”");
     }
 
     @Transactional

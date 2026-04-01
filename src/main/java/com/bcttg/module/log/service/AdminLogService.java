@@ -16,6 +16,7 @@ import com.bcttg.common.TimeRange;
 import com.bcttg.common.TimeRangeResolver;
 import com.bcttg.module.dashboard.entity.SystemAuditLog;
 import com.bcttg.module.dashboard.repository.SystemAuditLogRepository;
+import com.bcttg.module.dashboard.service.AuditLogMessageService;
 import com.bcttg.module.log.dto.LogSummaryResponse;
 import com.bcttg.module.log.dto.LoginLogResponse;
 import com.bcttg.module.log.dto.SystemLogResponse;
@@ -39,10 +40,16 @@ public class AdminLogService {
 
     private final SystemAuditLogRepository auditLogRepository;
     private final UserProfileRepository userProfileRepository;
+    private final AuditLogMessageService auditLogMessageService;
 
-    public AdminLogService(SystemAuditLogRepository auditLogRepository, UserProfileRepository userProfileRepository) {
+    public AdminLogService(
+        SystemAuditLogRepository auditLogRepository,
+        UserProfileRepository userProfileRepository,
+        AuditLogMessageService auditLogMessageService
+    ) {
         this.auditLogRepository = auditLogRepository;
         this.userProfileRepository = userProfileRepository;
+        this.auditLogMessageService = auditLogMessageService;
     }
 
     @Transactional(readOnly = true)
@@ -220,9 +227,9 @@ public class AdminLogService {
             log.getActorName(),
             log.getModuleName(),
             log.getActionType(),
-            log.getEntityName(),
+            auditLogMessageService.buildMessage(log),
             mapStatusToLevel(log.getStatus()),
-            log.getDetail(),
+            auditLogMessageService.buildMetadata(log),
             log.getCreatedAt()
         );
     }

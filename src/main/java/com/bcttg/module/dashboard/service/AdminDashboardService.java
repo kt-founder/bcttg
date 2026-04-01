@@ -38,6 +38,7 @@ public class AdminDashboardService {
     private final UserAccountRepository userAccountRepository;
     private final SystemAuditLogRepository systemAuditLogRepository;
     private final ServerRuntimeStatusService runtimeStatusService;
+    private final AuditLogMessageService auditLogMessageService;
 
     public AdminDashboardService(
         ContentItemRepository contentItemRepository,
@@ -45,7 +46,8 @@ public class AdminDashboardService {
         SongRepository songRepository,
         UserAccountRepository userAccountRepository,
         SystemAuditLogRepository systemAuditLogRepository,
-        ServerRuntimeStatusService runtimeStatusService
+        ServerRuntimeStatusService runtimeStatusService,
+        AuditLogMessageService auditLogMessageService
     ) {
         this.contentItemRepository = contentItemRepository;
         this.dataProfileRepository = dataProfileRepository;
@@ -53,6 +55,7 @@ public class AdminDashboardService {
         this.userAccountRepository = userAccountRepository;
         this.systemAuditLogRepository = systemAuditLogRepository;
         this.runtimeStatusService = runtimeStatusService;
+        this.auditLogMessageService = auditLogMessageService;
     }
 
     @Transactional(readOnly = true)
@@ -177,11 +180,10 @@ public class AdminDashboardService {
     }
 
     private AdminDashboardResponse.ActivityItem mapActivity(SystemAuditLog log) {
-        String title = log.getActionType() + " " + log.getModuleName();
         return new AdminDashboardResponse.ActivityItem(
-            title,
+            auditLogMessageService.buildTitle(log),
             log.getActorName(),
-            log.getDetail(),
+            auditLogMessageService.buildMessage(log),
             log.getCreatedAt(),
             log.getStatus()
         );

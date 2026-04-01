@@ -13,6 +13,7 @@ import com.bcttg.module.content.entity.ContentCategory;
 import com.bcttg.module.content.entity.ContentType;
 import com.bcttg.module.content.repository.ContentCategoryRepository;
 import com.bcttg.module.content.repository.ContentItemRepository;
+import com.bcttg.module.dashboard.service.SystemAuditTrailService;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,10 +26,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class ContentCategoryService {
     private final ContentCategoryRepository categoryRepository;
     private final ContentItemRepository itemRepository;
+    private final SystemAuditTrailService auditTrailService;
 
-    public ContentCategoryService(ContentCategoryRepository categoryRepository, ContentItemRepository itemRepository) {
+    public ContentCategoryService(
+        ContentCategoryRepository categoryRepository,
+        ContentItemRepository itemRepository,
+        SystemAuditTrailService auditTrailService
+    ) {
         this.categoryRepository = categoryRepository;
         this.itemRepository = itemRepository;
+        this.auditTrailService = auditTrailService;
     }
 
     public Page<ContentCategory> findAll(ContentType type, Long parentId, String q, Boolean isVisible, Pageable pageable) {
@@ -76,7 +83,7 @@ public class ContentCategoryService {
     }
 
     @Transactional
-    public ContentCategory create(CreateContentCategoryRequest request) {
+    public ContentCategory create(CreateContentCategoryRequest request, String actorPhone) {
         ContentCategory parent = null;
         if (request.getParentId() != null) {
             parent = getById(request.getParentId());
@@ -104,11 +111,13 @@ public class ContentCategoryService {
             sortOrder = categoryRepository.findMaxSortOrder(request.getType(), parent) + 1;
         }
         category.setSortOrder(sortOrder);
-        return categoryRepository.save(category);
+        ContentCategory saved = categoryRepository.save(category);
+        auditTrailService.record(actorPhone, "CREATE", "CONTENT_CATEGORY", saved.getName(), "tạo danh mục nội dung “" + saved.getName() + "”");
+        return saved;
     }
 
     @Transactional
-    public ContentCategory update(Long id, UpdateContentCategoryRequest request) {
+    public ContentCategory update(Long id, UpdateContentCategoryRequest request, String actorPhone) {
         ContentCategory category = getById(id);
 
         ContentCategory parent = category.getParent();
@@ -143,11 +152,13 @@ public class ContentCategoryService {
         if (request.getSortOrder() != null) {
             category.setSortOrder(request.getSortOrder());
         }
-        return categoryRepository.save(category);
+        ContentCategory saved = categoryRepository.save(category);
+        auditTrailService.record(actorPhone, "UPDATE", "CONTENT_CATEGORY", saved.getName(), "chỉnh sửa danh mục nội dung “" + saved.getName() + "”");
+        return saved;
     }
 
     @Transactional
-    public void delete(Long id) {
+    public void delete(Long id, String actorPhone) {
         ContentCategory category = getById(id);
         if (categoryRepository.existsByParentAndDeletedAtIsNull(category)) {
             throw new ApiException(ErrorCode.CONFLICT, HttpStatus.CONFLICT, "Cannot delete category with children");
@@ -155,11 +166,13 @@ public class ContentCategoryService {
         if (itemRepository.existsByCategoryAndDeletedAtIsNull(category)) {
             throw new ApiException(ErrorCode.CONFLICT, HttpStatus.CONFLICT, "Cannot delete category with content items");
         }
+        String name = category.getName();
         categoryRepository.delete(category);
+        auditTrailService.record(actorPhone, "DELETE", "CONTENT_CATEGORY", name, "xóa danh mục nội dung “" + name + "”");
     }
 
     @Transactional
-    public ContentCategory updateVisibility(Long id, boolean isVisible) {
+    public ContentCategory updateVisibility(Long id, boolean isVisible, String actorPhone) {
         ContentCategory category = getById(id);
         category.setIsVisible(isVisible);
 
@@ -183,11 +196,14 @@ public class ContentCategoryService {
                 .forEach(item -> item.setIsVisible(false));
         }
 
-        return categoryRepository.save(category);
+        ContentCategory saved = categoryRepository.save(category);
+        String phrase = isVisible ? "hiển thị danh mục nội dung “" + saved.getName() + "”" : "ẩn danh mục nội dung “" + saved.getName() + "”";
+        auditTrailService.record(actorPhone, "UPDATE", "CONTENT_CATEGORY", saved.getName(), phrase);
+        return saved;
     }
 
     @Transactional
-    public void reorder(ReorderContentCategoryRequest request) {
+    public void reorder(ReorderContentCategoryRequest request, String actorPhone) {
         if (request.getOrders() == null || request.getOrders().isEmpty()) {
             throw new ApiException(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST, "Orders cannot be empty");
         }
@@ -222,6 +238,8 @@ public class ContentCategoryService {
                 .ifPresent(c -> c.setSortOrder(order.getSortOrder()));
         }
         categoryRepository.saveAll(categories);
+        String scopeName = parent == null ? request.getType().name() : parent.getName();
+        auditTrailService.record(actorPhone, "UPDATE", "CONTENT_CATEGORY", scopeName, "sắp xếp lại danh mục nội dung");
     }
 
     private <T> T valueOrDefault(T requestedValue, T currentValue) {

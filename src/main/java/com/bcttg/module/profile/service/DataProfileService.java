@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import com.bcttg.common.ApiException;
 import com.bcttg.common.ErrorCode;
+import com.bcttg.module.dashboard.service.SystemAuditTrailService;
 import com.bcttg.module.media.entity.MediaAsset;
 import com.bcttg.module.media.repository.MediaAssetRepository;
 import com.bcttg.module.profile.dto.CreateDataProfileRequest;
@@ -26,10 +27,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class DataProfileService {
     private final DataProfileRepository repository;
     private final MediaAssetRepository mediaRepository;
+    private final SystemAuditTrailService auditTrailService;
 
-    public DataProfileService(DataProfileRepository repository, MediaAssetRepository mediaRepository) {
+    public DataProfileService(
+        DataProfileRepository repository,
+        MediaAssetRepository mediaRepository,
+        SystemAuditTrailService auditTrailService
+    ) {
         this.repository = repository;
         this.mediaRepository = mediaRepository;
+        this.auditTrailService = auditTrailService;
     }
 
     public Page<DataProfile> findAll(ProfileType profileType, String q, Boolean isVisible, Pageable pageable) {
@@ -95,11 +102,13 @@ public class DataProfileService {
         }
         profile.setSortOrder(sortOrder);
         profile.setCreatedByPhone(createdByPhone);
-        return repository.save(profile);
+        DataProfile saved = repository.save(profile);
+        auditTrailService.record(createdByPhone, "CREATE", "DATA_PROFILE", saved.getFullName(), "tạo hồ sơ dữ liệu “" + saved.getFullName() + "”");
+        return saved;
     }
 
     @Transactional
-    public DataProfile update(Long id, UpdateDataProfileRequest request) {
+    public DataProfile update(Long id, UpdateDataProfileRequest request, String actorPhone) {
         DataProfile profile = getById(id);
         MediaAsset avatarMedia = profile.getAvatarMedia();
         if (request.getAvatarMediaId() != null) {
@@ -120,24 +129,31 @@ public class DataProfileService {
         if (request.getSortOrder() != null) {
             profile.setSortOrder(request.getSortOrder());
         }
-        return repository.save(profile);
+        DataProfile saved = repository.save(profile);
+        auditTrailService.record(actorPhone, "UPDATE", "DATA_PROFILE", saved.getFullName(), "chỉnh sửa hồ sơ dữ liệu “" + saved.getFullName() + "”");
+        return saved;
     }
 
     @Transactional
-    public void delete(Long id) {
+    public void delete(Long id, String actorPhone) {
         DataProfile profile = getById(id);
+        String fullName = profile.getFullName();
         repository.delete(profile);
+        auditTrailService.record(actorPhone, "DELETE", "DATA_PROFILE", fullName, "xóa hồ sơ dữ liệu “" + fullName + "”");
     }
 
     @Transactional
-    public DataProfile updateVisibility(Long id, boolean isVisible) {
+    public DataProfile updateVisibility(Long id, boolean isVisible, String actorPhone) {
         DataProfile profile = getById(id);
         profile.setIsVisible(isVisible);
-        return repository.save(profile);
+        DataProfile saved = repository.save(profile);
+        String phrase = isVisible ? "hiển thị hồ sơ dữ liệu “" + saved.getFullName() + "”" : "ẩn hồ sơ dữ liệu “" + saved.getFullName() + "”";
+        auditTrailService.record(actorPhone, "UPDATE", "DATA_PROFILE", saved.getFullName(), phrase);
+        return saved;
     }
 
     @Transactional
-    public void reorder(ReorderDataProfileRequest request) {
+    public void reorder(ReorderDataProfileRequest request, String actorPhone) {
         if (request.getOrders() == null || request.getOrders().isEmpty()) {
             throw new ApiException(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST, "Orders cannot be empty");
         }
@@ -164,6 +180,7 @@ public class DataProfileService {
                 .ifPresent(p -> p.setSortOrder(order.getSortOrder()));
         }
         repository.saveAll(profiles);
+        auditTrailService.record(actorPhone, "UPDATE", "DATA_PROFILE", request.getProfileType().name(), "sắp xếp lại hồ sơ dữ liệu");
     }
 
     private void applyCreateOrUpdate(

@@ -76,27 +76,31 @@ public class AdminDataProfileController {
 
     @RequestMapping(path = "/{id}", method = {RequestMethod.PATCH, RequestMethod.PUT})
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public ApiResponse<DataProfileResponse> update(@PathVariable Long id, @Valid @RequestBody UpdateDataProfileRequest request) {
-        return ApiResponse.success(new DataProfileResponse(service.update(id, request)));
+    public ApiResponse<DataProfileResponse> update(@PathVariable Long id, @Valid @RequestBody UpdateDataProfileRequest request, Authentication authentication) {
+        return ApiResponse.success(new DataProfileResponse(service.update(id, request, actorPhone(authentication))));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public ApiResponse<Void> delete(@PathVariable Long id) {
-        service.delete(id);
+    public ApiResponse<Void> delete(@PathVariable Long id, Authentication authentication) {
+        service.delete(id, actorPhone(authentication));
         return ApiResponse.success(null);
     }
 
     @PatchMapping("/{id}/visibility")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public ApiResponse<DataProfileResponse> updateVisibility(@PathVariable Long id, @Valid @RequestBody VisibilityRequest request) {
-        return ApiResponse.success(new DataProfileResponse(service.updateVisibility(id, request.getIsVisible())));
+    public ApiResponse<DataProfileResponse> updateVisibility(@PathVariable Long id, @Valid @RequestBody VisibilityRequest request, Authentication authentication) {
+        return ApiResponse.success(new DataProfileResponse(service.updateVisibility(id, request.getIsVisible(), actorPhone(authentication))));
     }
 
     @PatchMapping("/reorder")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public ApiResponse<Void> reorder(@Valid @RequestBody ReorderDataProfileRequest request) {
-        service.reorder(request);
+    public ApiResponse<Void> reorder(@Valid @RequestBody ReorderDataProfileRequest request, Authentication authentication) {
+        service.reorder(request, actorPhone(authentication));
         return ApiResponse.success(null);
+    }
+
+    private String actorPhone(Authentication authentication) {
+        return authentication != null ? authentication.getName() : null;
     }
 }

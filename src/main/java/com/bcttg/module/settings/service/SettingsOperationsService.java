@@ -101,7 +101,7 @@ public class SettingsOperationsService {
                 : request.getBody();
             message.setText(body, "UTF-8");
             Transport.send(message);
-            auditTrailService.record(actorPhone, "TEST_EMAIL", "SETTINGS", request.getTo(), "Gui email kiem tra");
+            auditTrailService.record(actorPhone, "TEST_EMAIL", "SETTINGS", request.getTo(), "gửi email kiểm tra");
             return new TestEmailResponse(request.getTo(), Instant.now(), "Gui email kiem tra thanh cong");
         } catch (Exception ex) {
             throw new ApiException(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST, "Gui email that bai", List.of(ex.getMessage()));
@@ -161,7 +161,7 @@ public class SettingsOperationsService {
             if (process.exitValue() != 0) {
                 throw new ApiException(ErrorCode.INTERNAL_ERROR, HttpStatus.INTERNAL_SERVER_ERROR, "Phuc hoi backup that bai", List.of(processOutput));
             }
-            auditTrailService.record(actorPhone, "RESTORE", "SETTINGS", backupFile.getFileName().toString(), "Phuc hoi backup");
+            auditTrailService.record(actorPhone, "RESTORE", "SETTINGS", backupFile.getFileName().toString(), "khôi phục bản sao lưu");
             return new OperationMessageResponse("Phuc hoi backup thanh cong", Instant.now());
         } catch (IOException ex) {
             throw new ApiException(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST, "Khong tim thay cong cu mysql client", List.of(ex.getMessage()));
@@ -180,7 +180,7 @@ public class SettingsOperationsService {
     public CacheClearResponse clearCache(String actorPhone) {
         CacheManager cacheManager = cacheManagerProvider.getIfAvailable();
         if (cacheManager == null) {
-            auditTrailService.record(actorPhone, "CLEAR_CACHE", "SETTINGS", "cache", "Khong co cache de xoa");
+            auditTrailService.record(actorPhone, "CLEAR_CACHE", "SETTINGS", "cache", "xóa bộ nhớ đệm");
             return new CacheClearResponse(0, Instant.now(), "He thong chua cau hinh cache manager");
         }
         int cleared = 0;
@@ -191,7 +191,7 @@ public class SettingsOperationsService {
                 cleared++;
             }
         }
-        auditTrailService.record(actorPhone, "CLEAR_CACHE", "SETTINGS", "cache", "Da xoa " + cleared + " cache");
+        auditTrailService.record(actorPhone, "CLEAR_CACHE", "SETTINGS", "cache", "xóa bộ nhớ đệm");
         return new CacheClearResponse(cleared, Instant.now(), "Da xoa cache thanh cong");
     }
 

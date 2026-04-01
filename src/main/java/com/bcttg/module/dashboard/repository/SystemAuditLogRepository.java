@@ -19,7 +19,14 @@ public interface SystemAuditLogRepository extends JpaRepository<SystemAuditLog, 
 
     List<SystemAuditLog> findTop10ByDeletedAtIsNullOrderByCreatedAtDesc();
 
+    Optional<SystemAuditLog> findTopByDeletedAtIsNullOrderByCreatedAtDesc();
+
     Optional<SystemAuditLog> findTopByDeletedAtIsNullAndActionTypeOrderByCreatedAtDesc(String actionType);
+
+    @Query("select count(distinct u.id) " +
+        "from SystemAuditLog l join l.actorUser u " +
+        "where l.deletedAt is null and u.deletedAt is null and l.createdAt >= :fromTime and upper(l.status) <> 'FAILED'")
+    long countDistinctSuccessfulActorsSince(@Param("fromTime") Instant fromTime);
 
     @Query(value = "SELECT DATE(created_at) AS d, COUNT(*) AS c " +
         "FROM system_audit_logs " +

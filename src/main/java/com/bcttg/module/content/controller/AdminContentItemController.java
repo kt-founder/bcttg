@@ -70,8 +70,8 @@ public class AdminContentItemController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public ApiResponse<ContentItemResponse> create(@Valid @RequestBody CreateContentItemRequest request) {
-        return ApiResponse.success(new ContentItemResponse(service.create(request)));
+    public ApiResponse<ContentItemResponse> create(@Valid @RequestBody CreateContentItemRequest request, Authentication authentication) {
+        return ApiResponse.success(new ContentItemResponse(service.create(request, actorPhone(authentication))));
     }
 
     @GetMapping("/{id}")
@@ -82,27 +82,27 @@ public class AdminContentItemController {
 
     @RequestMapping(path = "/{id}", method = {RequestMethod.PATCH, RequestMethod.PUT})
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public ApiResponse<ContentItemResponse> update(@PathVariable Long id, @Valid @RequestBody UpdateContentItemRequest request) {
-        return ApiResponse.success(new ContentItemResponse(service.update(id, request)));
+    public ApiResponse<ContentItemResponse> update(@PathVariable Long id, @Valid @RequestBody UpdateContentItemRequest request, Authentication authentication) {
+        return ApiResponse.success(new ContentItemResponse(service.update(id, request, actorPhone(authentication))));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public ApiResponse<Void> delete(@PathVariable Long id) {
-        service.delete(id);
+    public ApiResponse<Void> delete(@PathVariable Long id, Authentication authentication) {
+        service.delete(id, actorPhone(authentication));
         return ApiResponse.success(null);
     }
 
     @PatchMapping("/{id}/visibility")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public ApiResponse<ContentItemResponse> updateVisibility(@PathVariable Long id, @Valid @RequestBody VisibilityRequest request) {
-        return ApiResponse.success(new ContentItemResponse(service.updateVisibility(id, request.getIsVisible())));
+    public ApiResponse<ContentItemResponse> updateVisibility(@PathVariable Long id, @Valid @RequestBody VisibilityRequest request, Authentication authentication) {
+        return ApiResponse.success(new ContentItemResponse(service.updateVisibility(id, request.getIsVisible(), actorPhone(authentication))));
     }
 
     @PatchMapping("/reorder")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public ApiResponse<Void> reorder(@Valid @RequestBody ReorderContentItemRequest request) {
-        service.reorder(request);
+    public ApiResponse<Void> reorder(@Valid @RequestBody ReorderContentItemRequest request, Authentication authentication) {
+        service.reorder(request, actorPhone(authentication));
         return ApiResponse.success(null);
     }
 
@@ -112,5 +112,9 @@ public class AdminContentItemController {
         service.getById(id);
         String username = authentication != null ? authentication.getName() : null;
         return ApiResponse.success(new MediaResponse(mediaService.upload(file, username)));
+    }
+
+    private String actorPhone(Authentication authentication) {
+        return authentication != null ? authentication.getName() : null;
     }
 }

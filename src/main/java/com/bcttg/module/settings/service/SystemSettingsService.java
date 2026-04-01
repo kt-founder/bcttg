@@ -58,7 +58,7 @@ public class SystemSettingsService {
         mergeWritable(settings, request);
         settings.setUpdatedBy(actorPhone);
         SystemSettings saved = repository.save(settings);
-        auditTrailService.record(actorPhone, "UPDATE", "SETTINGS", "system_settings", "Cap nhat cau hinh he thong");
+        auditTrailService.record(actorPhone, "UPDATE", "SETTINGS", "system_settings", "cập nhật cấu hình hệ thống");
         return toResponse(saved);
     }
 
@@ -68,7 +68,7 @@ public class SystemSettingsService {
         applyWritable(settings, defaults, defaults.getSmtpPass());
         settings.setUpdatedBy(actorPhone);
         SystemSettings saved = repository.save(settings);
-        auditTrailService.record(actorPhone, "UPDATE", "SETTINGS", "system_settings", "Khoi phuc cau hinh mac dinh");
+        auditTrailService.record(actorPhone, "UPDATE", "SETTINGS", "system_settings", "khôi phục cấu hình mặc định");
         return toResponse(saved);
     }
 

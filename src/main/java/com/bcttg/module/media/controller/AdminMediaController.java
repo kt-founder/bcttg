@@ -42,8 +42,9 @@ public class AdminMediaController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public ApiResponse<Void> delete(@PathVariable Long id) {
-        mediaService.delete(id);
+    public ApiResponse<Void> delete(@PathVariable Long id, Authentication authentication) {
+        String username = authentication != null ? authentication.getName() : null;
+        mediaService.delete(id, username);
         return ApiResponse.success(null);
     }
 }

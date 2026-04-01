@@ -68,8 +68,8 @@ public class AdminUserController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<UserAdminResponse> create(@Valid @RequestBody CreateUserRequest request) {
-        return ApiResponse.success(userManagementService.create(request));
+    public ApiResponse<UserAdminResponse> create(@Valid @RequestBody CreateUserRequest request, Authentication authentication) {
+        return ApiResponse.success(userManagementService.create(request, actorPhone(authentication)));
     }
 
     @RequestMapping(path = "/{id}", method = {RequestMethod.PATCH, RequestMethod.PUT})
@@ -100,8 +100,8 @@ public class AdminUserController {
 
     @PatchMapping("/{id}/reset-password")
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<Void> resetPassword(@PathVariable Long id, @Valid @RequestBody ResetUserPasswordRequest request) {
-        userManagementService.resetPassword(id, request.getNewPassword());
+    public ApiResponse<Void> resetPassword(@PathVariable Long id, @Valid @RequestBody ResetUserPasswordRequest request, Authentication authentication) {
+        userManagementService.resetPassword(id, request.getNewPassword(), actorPhone(authentication));
         return ApiResponse.success(null);
     }
 

@@ -81,7 +81,7 @@ public class HomeModuleService {
         }
 
         List<HomeModuleConfig> saved = repository.saveAll(existing);
-        auditTrailService.record(actorPhone, "UPDATE", "HOME_MODULE", "home_modules", "Cap nhat cau hinh module trang chu");
+        auditTrailService.record(actorPhone, "UPDATE", "HOME_MODULE", "home_modules", "cập nhật cấu hình module trang chủ");
         return saved.stream()
             .sorted((left, right) -> {
                 int compareSort = Integer.compare(left.getSortOrder(), right.getSortOrder());

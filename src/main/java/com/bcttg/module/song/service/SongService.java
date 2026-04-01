@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import com.bcttg.common.ApiException;
 import com.bcttg.common.ErrorCode;
+import com.bcttg.module.dashboard.service.SystemAuditTrailService;
 import com.bcttg.module.media.entity.MediaAsset;
 import com.bcttg.module.media.repository.MediaAssetRepository;
 import com.bcttg.module.song.dto.CreateSongRequest;
@@ -28,11 +29,18 @@ public class SongService {
     private final SongRepository songRepository;
     private final SongCategoryRepository categoryRepository;
     private final MediaAssetRepository mediaRepository;
+    private final SystemAuditTrailService auditTrailService;
 
-    public SongService(SongRepository songRepository, SongCategoryRepository categoryRepository, MediaAssetRepository mediaRepository) {
+    public SongService(
+        SongRepository songRepository,
+        SongCategoryRepository categoryRepository,
+        MediaAssetRepository mediaRepository,
+        SystemAuditTrailService auditTrailService
+    ) {
         this.songRepository = songRepository;
         this.categoryRepository = categoryRepository;
         this.mediaRepository = mediaRepository;
+        this.auditTrailService = auditTrailService;
     }
 
     public Page<Song> findAll(Long categoryId, String q, Boolean isVisible, Pageable pageable) {
@@ -74,7 +82,7 @@ public class SongService {
     }
 
     @Transactional
-    public Song create(CreateSongRequest request) {
+    public Song create(CreateSongRequest request, String actorPhone) {
         SongCategory category = null;
         if (request.getCategoryId() != null) {
             category = categoryRepository.findById(request.getCategoryId())
@@ -100,11 +108,13 @@ public class SongService {
             sortOrder = songRepository.findMaxSortOrder(category) + 1;
         }
         song.setSortOrder(sortOrder);
-        return songRepository.save(song);
+        Song saved = songRepository.save(song);
+        auditTrailService.record(actorPhone, "CREATE", "SONG", saved.getTitle(), "tạo ca khúc “" + saved.getTitle() + "”");
+        return saved;
     }
 
     @Transactional
-    public Song update(Long id, UpdateSongRequest request) {
+    public Song update(Long id, UpdateSongRequest request, String actorPhone) {
         Song song = getById(id);
         SongCategory category = song.getCategory();
         if (request.getCategoryId() != null) {
@@ -143,24 +153,31 @@ public class SongService {
         if (request.getSortOrder() != null) {
             song.setSortOrder(request.getSortOrder());
         }
-        return songRepository.save(song);
+        Song saved = songRepository.save(song);
+        auditTrailService.record(actorPhone, "UPDATE", "SONG", saved.getTitle(), "chỉnh sửa ca khúc “" + saved.getTitle() + "”");
+        return saved;
     }
 
     @Transactional
-    public void delete(Long id) {
+    public void delete(Long id, String actorPhone) {
         Song song = getById(id);
+        String title = song.getTitle();
         songRepository.delete(song);
+        auditTrailService.record(actorPhone, "DELETE", "SONG", title, "xóa ca khúc “" + title + "”");
     }
 
     @Transactional
-    public Song updateVisibility(Long id, boolean isVisible) {
+    public Song updateVisibility(Long id, boolean isVisible, String actorPhone) {
         Song song = getById(id);
         song.setIsVisible(isVisible);
-        return songRepository.save(song);
+        Song saved = songRepository.save(song);
+        String phrase = isVisible ? "hiển thị ca khúc “" + saved.getTitle() + "”" : "ẩn ca khúc “" + saved.getTitle() + "”";
+        auditTrailService.record(actorPhone, "UPDATE", "SONG", saved.getTitle(), phrase);
+        return saved;
     }
 
     @Transactional
-    public void reorder(ReorderSongRequest request) {
+    public void reorder(ReorderSongRequest request, String actorPhone) {
         if (request.getOrders() == null || request.getOrders().isEmpty()) {
             throw new ApiException(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST, "Orders cannot be empty");
         }
@@ -193,6 +210,8 @@ public class SongService {
                 .ifPresent(s -> s.setSortOrder(order.getSortOrder()));
         }
         songRepository.saveAll(songs);
+        String scopeName = category == null ? "Tất cả ca khúc" : category.getName();
+        auditTrailService.record(actorPhone, "UPDATE", "SONG", scopeName, "sắp xếp lại ca khúc");
     }
 
     private void validateAudioSource(Long audioMediaId, String audioUrl) {

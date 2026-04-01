@@ -12,6 +12,7 @@ import java.util.UUID;
 import com.bcttg.common.ApiException;
 import com.bcttg.common.ErrorCode;
 import com.bcttg.module.content.repository.ContentItemRepository;
+import com.bcttg.module.dashboard.service.SystemAuditTrailService;
 import com.bcttg.module.media.MediaProperties;
 import com.bcttg.module.media.entity.MediaAsset;
 import com.bcttg.module.media.repository.MediaAssetRepository;
@@ -30,15 +31,20 @@ public class MediaService {
     private final ContentItemRepository contentItemRepository;
     private final SongRepository songRepository;
     private final MediaProperties properties;
+    private final SystemAuditTrailService auditTrailService;
 
-    public MediaService(MediaAssetRepository mediaRepository,
-                        ContentItemRepository contentItemRepository,
-                        SongRepository songRepository,
-                        MediaProperties properties) {
+    public MediaService(
+        MediaAssetRepository mediaRepository,
+        ContentItemRepository contentItemRepository,
+        SongRepository songRepository,
+        MediaProperties properties,
+        SystemAuditTrailService auditTrailService
+    ) {
         this.mediaRepository = mediaRepository;
         this.contentItemRepository = contentItemRepository;
         this.songRepository = songRepository;
         this.properties = properties;
+        this.auditTrailService = auditTrailService;
     }
 
     @Transactional
@@ -76,7 +82,9 @@ public class MediaService {
         asset.setStorageKey(storageKey);
         asset.setUrl(url);
         asset.setCreatedBy(createdBy);
-        return mediaRepository.save(asset);
+        MediaAsset saved = mediaRepository.save(asset);
+        auditTrailService.record(createdBy, "CREATE", "MEDIA", saved.getFileName(), "tải lên tệp media “" + saved.getFileName() + "”");
+        return saved;
     }
 
     public MediaAsset getById(Long id) {
@@ -89,7 +97,7 @@ public class MediaService {
     }
 
     @Transactional
-    public void delete(Long id) {
+    public void delete(Long id, String actorPhone) {
         MediaAsset media = getById(id);
         if (contentItemRepository.existsByCoverMediaAndDeletedAtIsNull(media)) {
             throw new ApiException(ErrorCode.CONFLICT, HttpStatus.CONFLICT, "Media is used by content items");
@@ -97,7 +105,9 @@ public class MediaService {
         if (songRepository.existsByAudioMediaAndDeletedAtIsNull(media)) {
             throw new ApiException(ErrorCode.CONFLICT, HttpStatus.CONFLICT, "Media is used by songs");
         }
+        String fileName = media.getFileName();
         mediaRepository.delete(media);
+        auditTrailService.record(actorPhone, "DELETE", "MEDIA", fileName, "xóa tệp media “" + fileName + "”");
     }
 
     public Resource loadAsResource(String storageKey) {

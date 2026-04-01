@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import com.bcttg.common.ApiException;
 import com.bcttg.common.ErrorCode;
+import com.bcttg.module.dashboard.service.SystemAuditTrailService;
 import com.bcttg.module.song.dto.CreateSongCategoryRequest;
 import com.bcttg.module.song.dto.ReorderSongCategoryRequest;
 import com.bcttg.module.song.dto.UpdateSongCategoryRequest;
@@ -24,10 +25,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class SongCategoryService {
     private final SongCategoryRepository categoryRepository;
     private final SongRepository songRepository;
+    private final SystemAuditTrailService auditTrailService;
 
-    public SongCategoryService(SongCategoryRepository categoryRepository, SongRepository songRepository) {
+    public SongCategoryService(
+        SongCategoryRepository categoryRepository,
+        SongRepository songRepository,
+        SystemAuditTrailService auditTrailService
+    ) {
         this.categoryRepository = categoryRepository;
         this.songRepository = songRepository;
+        this.auditTrailService = auditTrailService;
     }
 
     public Page<SongCategory> findAll(Long parentId, String q, Boolean isVisible, Pageable pageable) {
@@ -72,7 +79,7 @@ public class SongCategoryService {
     }
 
     @Transactional
-    public SongCategory create(CreateSongCategoryRequest request) {
+    public SongCategory create(CreateSongCategoryRequest request, String actorPhone) {
         SongCategory parent = null;
         if (request.getParentId() != null) {
             parent = getById(request.getParentId());
@@ -96,11 +103,13 @@ public class SongCategoryService {
             sortOrder = categoryRepository.findMaxSortOrder(parent) + 1;
         }
         category.setSortOrder(sortOrder);
-        return categoryRepository.save(category);
+        SongCategory saved = categoryRepository.save(category);
+        auditTrailService.record(actorPhone, "CREATE", "SONG_CATEGORY", saved.getName(), "tạo danh mục ca khúc “" + saved.getName() + "”");
+        return saved;
     }
 
     @Transactional
-    public SongCategory update(Long id, UpdateSongCategoryRequest request) {
+    public SongCategory update(Long id, UpdateSongCategoryRequest request, String actorPhone) {
         SongCategory category = getById(id);
         SongCategory parent = category.getParent();
         if (request.getParentId() != null) {
@@ -131,11 +140,13 @@ public class SongCategoryService {
         if (request.getSortOrder() != null) {
             category.setSortOrder(request.getSortOrder());
         }
-        return categoryRepository.save(category);
+        SongCategory saved = categoryRepository.save(category);
+        auditTrailService.record(actorPhone, "UPDATE", "SONG_CATEGORY", saved.getName(), "chỉnh sửa danh mục ca khúc “" + saved.getName() + "”");
+        return saved;
     }
 
     @Transactional
-    public void delete(Long id) {
+    public void delete(Long id, String actorPhone) {
         SongCategory category = getById(id);
         if (categoryRepository.existsByParentAndDeletedAtIsNull(category)) {
             throw new ApiException(ErrorCode.CONFLICT, HttpStatus.CONFLICT, "Cannot delete category with children");
@@ -143,11 +154,13 @@ public class SongCategoryService {
         if (songRepository.existsByCategoryAndDeletedAtIsNull(category)) {
             throw new ApiException(ErrorCode.CONFLICT, HttpStatus.CONFLICT, "Cannot delete category with songs");
         }
+        String name = category.getName();
         categoryRepository.delete(category);
+        auditTrailService.record(actorPhone, "DELETE", "SONG_CATEGORY", name, "xóa danh mục ca khúc “" + name + "”");
     }
 
     @Transactional
-    public SongCategory updateVisibility(Long id, boolean isVisible) {
+    public SongCategory updateVisibility(Long id, boolean isVisible, String actorPhone) {
         SongCategory category = getById(id);
         category.setIsVisible(isVisible);
         if (!isVisible) {
@@ -171,11 +184,14 @@ public class SongCategoryService {
                     .forEach(song -> song.setIsVisible(false));
             }
         }
-        return categoryRepository.save(category);
+        SongCategory saved = categoryRepository.save(category);
+        String phrase = isVisible ? "hiển thị danh mục ca khúc “" + saved.getName() + "”" : "ẩn danh mục ca khúc “" + saved.getName() + "”";
+        auditTrailService.record(actorPhone, "UPDATE", "SONG_CATEGORY", saved.getName(), phrase);
+        return saved;
     }
 
     @Transactional
-    public void reorder(ReorderSongCategoryRequest request) {
+    public void reorder(ReorderSongCategoryRequest request, String actorPhone) {
         if (request.getOrders() == null || request.getOrders().isEmpty()) {
             throw new ApiException(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST, "Orders cannot be empty");
         }
@@ -207,6 +223,8 @@ public class SongCategoryService {
                 .ifPresent(c -> c.setSortOrder(order.getSortOrder()));
         }
         categoryRepository.saveAll(categories);
+        String scopeName = parent == null ? "Danh mục ca khúc" : parent.getName();
+        auditTrailService.record(actorPhone, "UPDATE", "SONG_CATEGORY", scopeName, "sắp xếp lại danh mục ca khúc");
     }
 
     private <T> T valueOrDefault(T requestedValue, T currentValue) {

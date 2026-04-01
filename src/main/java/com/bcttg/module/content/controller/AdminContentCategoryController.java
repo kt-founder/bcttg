@@ -20,6 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -63,8 +64,8 @@ public class AdminContentCategoryController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public ApiResponse<ContentCategoryResponse> create(@Valid @RequestBody CreateContentCategoryRequest request) {
-        return ApiResponse.success(new ContentCategoryResponse(service.create(request)));
+    public ApiResponse<ContentCategoryResponse> create(@Valid @RequestBody CreateContentCategoryRequest request, Authentication authentication) {
+        return ApiResponse.success(new ContentCategoryResponse(service.create(request, actorPhone(authentication))));
     }
 
     @GetMapping("/{id}")
@@ -75,27 +76,31 @@ public class AdminContentCategoryController {
 
     @RequestMapping(path = "/{id}", method = {RequestMethod.PATCH, RequestMethod.PUT})
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public ApiResponse<ContentCategoryResponse> update(@PathVariable Long id, @Valid @RequestBody UpdateContentCategoryRequest request) {
-        return ApiResponse.success(new ContentCategoryResponse(service.update(id, request)));
+    public ApiResponse<ContentCategoryResponse> update(@PathVariable Long id, @Valid @RequestBody UpdateContentCategoryRequest request, Authentication authentication) {
+        return ApiResponse.success(new ContentCategoryResponse(service.update(id, request, actorPhone(authentication))));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public ApiResponse<Void> delete(@PathVariable Long id) {
-        service.delete(id);
+    public ApiResponse<Void> delete(@PathVariable Long id, Authentication authentication) {
+        service.delete(id, actorPhone(authentication));
         return ApiResponse.success(null);
     }
 
     @PatchMapping("/{id}/visibility")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public ApiResponse<ContentCategoryResponse> updateVisibility(@PathVariable Long id, @Valid @RequestBody VisibilityRequest request) {
-        return ApiResponse.success(new ContentCategoryResponse(service.updateVisibility(id, request.getIsVisible())));
+    public ApiResponse<ContentCategoryResponse> updateVisibility(@PathVariable Long id, @Valid @RequestBody VisibilityRequest request, Authentication authentication) {
+        return ApiResponse.success(new ContentCategoryResponse(service.updateVisibility(id, request.getIsVisible(), actorPhone(authentication))));
     }
 
     @PatchMapping("/reorder")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public ApiResponse<Void> reorder(@Valid @RequestBody ReorderContentCategoryRequest request) {
-        service.reorder(request);
+    public ApiResponse<Void> reorder(@Valid @RequestBody ReorderContentCategoryRequest request, Authentication authentication) {
+        service.reorder(request, actorPhone(authentication));
         return ApiResponse.success(null);
+    }
+
+    private String actorPhone(Authentication authentication) {
+        return authentication != null ? authentication.getName() : null;
     }
 }
