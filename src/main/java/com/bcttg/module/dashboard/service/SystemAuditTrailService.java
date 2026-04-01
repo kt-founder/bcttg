@@ -30,6 +30,11 @@ public class SystemAuditTrailService {
 
     @Transactional
     public void record(String actorPhone, String actionType, String moduleName, String entityName, String detail) {
+        record(actorPhone, actionType, moduleName, entityName, detail, "SUCCESS");
+    }
+
+    @Transactional
+    public void record(String actorPhone, String actionType, String moduleName, String entityName, String detail, String status) {
         UserAccount actorUser = resolveActorUser(actorPhone);
         String actorName = resolveActorName(actorUser, actorPhone);
 
@@ -40,7 +45,7 @@ public class SystemAuditTrailService {
         log.setModuleName(moduleName);
         log.setEntityName(entityName);
         log.setDetail(detail);
-        log.setStatus("SUCCESS");
+        log.setStatus(status);
         repository.save(log);
     }
 

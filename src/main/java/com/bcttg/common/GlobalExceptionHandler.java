@@ -21,6 +21,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +58,15 @@ public class GlobalExceptionHandler {
         String detail = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : "Malformed JSON request";
         ApiError error = new ApiError(ErrorCode.BAD_REQUEST.name(), "Invalid request body", List.of(detail));
         return ResponseEntity.badRequest().body(ApiResponse.error(error));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUploadTooLarge(MaxUploadSizeExceededException ex) {
+        String detail = ex.getMaxUploadSize() > 0
+            ? "Kich thuoc toi da: " + ex.getMaxUploadSize() + " bytes"
+            : "Kich thuoc tep vuot gioi han cho phep";
+        ApiError error = new ApiError(ErrorCode.BAD_REQUEST.name(), "File upload vuot gioi han cho phep", List.of(detail));
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(ApiResponse.error(error));
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)

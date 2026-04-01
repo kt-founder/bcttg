@@ -1,18 +1,12 @@
 package com.bcttg.module.settings.service;
 
-import java.io.File;
 import java.lang.management.ManagementFactory;
-import java.nio.file.Path;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import javax.sql.DataSource;
-
 import com.bcttg.module.dashboard.service.SystemAuditTrailService;
-import com.bcttg.module.media.MediaProperties;
 import com.bcttg.module.settings.SystemSettingsDefaultsProperties;
 import com.bcttg.module.settings.SystemSettingsWritable;
 import com.bcttg.module.settings.dto.SystemSettingsRequest;
@@ -30,25 +24,22 @@ import org.springframework.transaction.annotation.Transactional;
 public class SystemSettingsService {
     private final SystemSettingsRepository repository;
     private final SystemSettingsDefaultsProperties defaults;
-    private final MediaProperties mediaProperties;
     private final SystemAuditTrailService auditTrailService;
-    private final DataSource dataSource;
     private final Environment environment;
+    private final ServerRuntimeStatusService runtimeStatusService;
 
     public SystemSettingsService(
         SystemSettingsRepository repository,
         SystemSettingsDefaultsProperties defaults,
-        MediaProperties mediaProperties,
         SystemAuditTrailService auditTrailService,
-        DataSource dataSource,
-        Environment environment
+        Environment environment,
+        ServerRuntimeStatusService runtimeStatusService
     ) {
         this.repository = repository;
         this.defaults = defaults;
-        this.mediaProperties = mediaProperties;
         this.auditTrailService = auditTrailService;
-        this.dataSource = dataSource;
         this.environment = environment;
+        this.runtimeStatusService = runtimeStatusService;
     }
 
     @Transactional(readOnly = true)
@@ -83,13 +74,7 @@ public class SystemSettingsService {
 
     @Transactional(readOnly = true)
     public List<SystemStatusCardResponse> getStatusCards() {
-        Optional<SystemSettings> settings = repository.findTopByDeletedAtIsNullOrderByIdAsc();
-        return List.of(
-            buildDatabaseStatus(),
-            buildStorageStatus(),
-            buildUptimeStatus(),
-            buildSettingsStatus(settings.orElse(null))
-        );
+        return runtimeStatusService.getStatusCards();
     }
 
     @Transactional(readOnly = true)
@@ -272,77 +257,4 @@ public class SystemSettingsService {
         return "********";
     }
 
-    private SystemStatusCardResponse buildDatabaseStatus() {
-        try (java.sql.Connection connection = dataSource.getConnection()) {
-            boolean valid = connection.isValid(2);
-            return new SystemStatusCardResponse("database", "Co so du lieu", valid ? "Ket noi on dinh" : "Mat ket noi", valid ? "GOOD" : "ERROR");
-        } catch (Exception ex) {
-            return new SystemStatusCardResponse("database", "Co so du lieu", "Khong ket noi duoc", "ERROR");
-        }
-    }
-
-    private SystemStatusCardResponse buildStorageStatus() {
-        Path storagePath = Path.of(mediaProperties.getStorageRoot() == null ? "./storage" : mediaProperties.getStorageRoot());
-        File storage = storagePath.toFile();
-        if (!storage.exists()) {
-            return new SystemStatusCardResponse("storage", "Luu tru media", "Thu muc chua ton tai", "WARN");
-        }
-        long totalSpace = storage.getTotalSpace();
-        long usableSpace = storage.getUsableSpace();
-        long usedSpace = totalSpace - usableSpace;
-        double usedRatio = totalSpace > 0 ? (double) usedSpace / (double) totalSpace : 0D;
-        String state = usedRatio >= 0.9D ? "ERROR" : usedRatio >= 0.75D ? "WARN" : "GOOD";
-        return new SystemStatusCardResponse(
-            "storage",
-            "Luu tru media",
-            formatSize(usableSpace) + " trong / " + formatSize(totalSpace),
-            state
-        );
-    }
-
-    private SystemStatusCardResponse buildUptimeStatus() {
-        Instant startedAt = Instant.ofEpochMilli(ManagementFactory.getRuntimeMXBean().getStartTime());
-        Duration duration = Duration.between(startedAt, Instant.now());
-        return new SystemStatusCardResponse("uptime", "Thoi gian hoat dong", formatDuration(duration), "INFO");
-    }
-
-    private SystemStatusCardResponse buildSettingsStatus(SystemSettings settings) {
-        if (settings == null || settings.getUpdatedAt() == null) {
-            return new SystemStatusCardResponse("settings", "Cau hinh he thong", "Dang dung gia tri mac dinh", "INFO");
-        }
-        String updatedBy = settings.getUpdatedBy() == null || settings.getUpdatedBy().isBlank()
-            ? "System"
-            : settings.getUpdatedBy();
-        return new SystemStatusCardResponse("settings", "Cau hinh he thong", updatedBy + " cap nhat luc " + settings.getUpdatedAt(), "GOOD");
-    }
-
-    private String formatSize(long bytes) {
-        if (bytes < 1024L) {
-            return bytes + " B";
-        }
-        double kilobytes = bytes / 1024D;
-        if (kilobytes < 1024D) {
-            return String.format("%.1f KB", kilobytes);
-        }
-        double megabytes = kilobytes / 1024D;
-        if (megabytes < 1024D) {
-            return String.format("%.1f MB", megabytes);
-        }
-        double gigabytes = megabytes / 1024D;
-        return String.format("%.1f GB", gigabytes);
-    }
-
-    private String formatDuration(Duration duration) {
-        long totalMinutes = duration.toMinutes();
-        long days = totalMinutes / (60L * 24L);
-        long hours = (totalMinutes % (60L * 24L)) / 60L;
-        long minutes = totalMinutes % 60L;
-        if (days > 0L) {
-            return days + " ngay " + hours + " gio";
-        }
-        if (hours > 0L) {
-            return hours + " gio " + minutes + " phut";
-        }
-        return minutes + " phut";
-    }
 }

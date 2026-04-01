@@ -238,15 +238,15 @@ Authorization: Bearer <jwt_token>
   - `GET`: cho phep `ADMIN`, `MANAGER`, `USER`.
 - Module `admin/content-*`, `admin/song-*`, `admin/data-profiles`, `admin/media`:
   - `GET` list/detail: `ADMIN`, `MANAGER`
-  - `POST/PATCH/DELETE`: `ADMIN`, `MANAGER`
+  - `POST/PATCH/PUT/DELETE`: `ADMIN`, `MANAGER`
 - Module `admin/users`:
   - `GET` list/detail: `ADMIN`, `MANAGER`
-  - `POST/PATCH/DELETE`: chi `ADMIN`
+  - `POST/PATCH/PUT/DELETE`: chi `ADMIN`
 - Module `admin/dashboard`: `ADMIN`, `MANAGER`
 - Module `admin/settings`: chi `ADMIN`
 - Module `admin/home-modules`:
   - `GET`: `ADMIN`, `MANAGER`
-  - `PATCH`: `ADMIN`
+  - `PATCH`, `PUT`: `ADMIN`
 - Module `notes`: `ADMIN`, `MANAGER`, `USER` tren du lieu cua chinh tai khoan dang nhap
 
 ---
@@ -337,7 +337,7 @@ Luu y:
 | GET | `/api/v1/admin/content-categories` | ADMIN/MANAGER | Liet ke danh muc |
 | POST | `/api/v1/admin/content-categories` | ADMIN/MANAGER | Tao danh muc |
 | GET | `/api/v1/admin/content-categories/{id}` | ADMIN/MANAGER | Chi tiet danh muc |
-| PATCH | `/api/v1/admin/content-categories/{id}` | ADMIN/MANAGER | Cap nhat mot phan danh muc, field bo trong duoc giu nguyen |
+| PATCH / PUT | `/api/v1/admin/content-categories/{id}` | ADMIN/MANAGER | Cap nhat danh muc, backend ho tro ca partial (`PATCH`) va tuong thich nguoc (`PUT`) |
 | DELETE | `/api/v1/admin/content-categories/{id}` | ADMIN/MANAGER | Xoa danh muc |
 | PATCH | `/api/v1/admin/content-categories/{id}/visibility` | ADMIN/MANAGER | Bat/tat hien thi |
 | PATCH | `/api/v1/admin/content-categories/reorder` | ADMIN/MANAGER | Sap xep thu tu |
@@ -349,7 +349,7 @@ Luu y:
 | GET | `/api/v1/admin/content-items` | ADMIN/MANAGER | Liet ke noi dung |
 | POST | `/api/v1/admin/content-items` | ADMIN/MANAGER | Tao noi dung |
 | GET | `/api/v1/admin/content-items/{id}` | ADMIN/MANAGER | Chi tiet noi dung |
-| PATCH | `/api/v1/admin/content-items/{id}` | ADMIN/MANAGER | Cap nhat mot phan noi dung, field bo trong duoc giu nguyen |
+| PATCH / PUT | `/api/v1/admin/content-items/{id}` | ADMIN/MANAGER | Cap nhat noi dung, backend ho tro ca partial (`PATCH`) va tuong thich nguoc (`PUT`) |
 | DELETE | `/api/v1/admin/content-items/{id}` | ADMIN/MANAGER | Xoa noi dung |
 | PATCH | `/api/v1/admin/content-items/{id}/visibility` | ADMIN/MANAGER | Bat/tat hien thi |
 | PATCH | `/api/v1/admin/content-items/reorder` | ADMIN/MANAGER | Sap xep thu tu |
@@ -362,7 +362,7 @@ Luu y:
 | GET | `/api/v1/admin/song-categories` | ADMIN/MANAGER | Liet ke danh muc bai hat |
 | POST | `/api/v1/admin/song-categories` | ADMIN/MANAGER | Tao danh muc bai hat |
 | GET | `/api/v1/admin/song-categories/{id}` | ADMIN/MANAGER | Chi tiet danh muc |
-| PATCH | `/api/v1/admin/song-categories/{id}` | ADMIN/MANAGER | Cap nhat mot phan danh muc, field bo trong duoc giu nguyen |
+| PATCH / PUT | `/api/v1/admin/song-categories/{id}` | ADMIN/MANAGER | Cap nhat danh muc, backend ho tro ca partial (`PATCH`) va tuong thich nguoc (`PUT`) |
 | DELETE | `/api/v1/admin/song-categories/{id}` | ADMIN/MANAGER | Xoa danh muc |
 | PATCH | `/api/v1/admin/song-categories/{id}/visibility` | ADMIN/MANAGER | Bat/tat hien thi |
 | PATCH | `/api/v1/admin/song-categories/reorder` | ADMIN/MANAGER | Sap xep thu tu |
@@ -374,7 +374,7 @@ Luu y:
 | GET | `/api/v1/admin/songs` | ADMIN/MANAGER | Liet ke bai hat |
 | POST | `/api/v1/admin/songs` | ADMIN/MANAGER | Tao bai hat |
 | GET | `/api/v1/admin/songs/{id}` | ADMIN/MANAGER | Chi tiet bai hat |
-| PATCH | `/api/v1/admin/songs/{id}` | ADMIN/MANAGER | Cap nhat mot phan bai hat, field bo trong duoc giu nguyen |
+| PATCH / PUT | `/api/v1/admin/songs/{id}` | ADMIN/MANAGER | Cap nhat bai hat, backend ho tro ca partial (`PATCH`) va tuong thich nguoc (`PUT`) |
 | DELETE | `/api/v1/admin/songs/{id}` | ADMIN/MANAGER | Xoa bai hat |
 | PATCH | `/api/v1/admin/songs/{id}/visibility` | ADMIN/MANAGER | Bat/tat hien thi |
 | PATCH | `/api/v1/admin/songs/reorder` | ADMIN/MANAGER | Sap xep thu tu |
@@ -394,7 +394,7 @@ Luu y:
 | GET | `/api/v1/admin/data-profiles` | ADMIN/MANAGER | Liet ke ho so du lieu |
 | POST | `/api/v1/admin/data-profiles` | ADMIN/MANAGER | Tao ho so du lieu |
 | GET | `/api/v1/admin/data-profiles/{id}` | ADMIN/MANAGER | Chi tiet ho so |
-| PATCH | `/api/v1/admin/data-profiles/{id}` | ADMIN/MANAGER | Cap nhat mot phan ho so, field bo trong duoc giu nguyen |
+| PATCH / PUT | `/api/v1/admin/data-profiles/{id}` | ADMIN/MANAGER | Cap nhat ho so, backend ho tro ca partial (`PATCH`) va tuong thich nguoc (`PUT`) |
 | DELETE | `/api/v1/admin/data-profiles/{id}` | ADMIN/MANAGER | Xoa ho so |
 | PATCH | `/api/v1/admin/data-profiles/{id}/visibility` | ADMIN/MANAGER | Bat/tat hien thi ho so |
 | PATCH | `/api/v1/admin/data-profiles/reorder` | ADMIN/MANAGER | Sap xep thu tu ho so theo tung `profileType` |
@@ -424,7 +424,7 @@ Luu y:
 | GET | `/api/v1/admin/users` | ADMIN/MANAGER | Liet ke tai khoan nguoi dung |
 | GET | `/api/v1/admin/users/{id}` | ADMIN/MANAGER | Chi tiet tai khoan |
 | POST | `/api/v1/admin/users` | ADMIN | Tao tai khoan moi |
-| PATCH | `/api/v1/admin/users/{id}` | ADMIN | Cap nhat mot phan thong tin tai khoan + profile, field bo trong duoc giu nguyen |
+| PATCH / PUT | `/api/v1/admin/users/{id}` | ADMIN | Cap nhat thong tin tai khoan + profile, backend ho tro ca partial (`PATCH`) va tuong thich nguoc (`PUT`) |
 | PATCH | `/api/v1/admin/users/{id}/active` | ADMIN | Khoa/mo khoa tai khoan |
 | PATCH | `/api/v1/admin/users/{id}/role` | ADMIN | Doi role tai khoan |
 | PATCH | `/api/v1/admin/users/{id}/reset-password` | ADMIN | Cap lai mat khau |
@@ -441,17 +441,38 @@ Luu y:
 | Method | Path | Role | Mo ta |
 |---|---|---|---|
 | GET | `/api/v1/admin/settings` | ADMIN | Lay cau hinh he thong hien tai |
-| PATCH | `/api/v1/admin/settings` | ADMIN | Cap nhat mot phan cau hinh he thong, field bo trong duoc giu nguyen |
+| PATCH / PUT | `/api/v1/admin/settings` | ADMIN | Cap nhat cau hinh he thong, backend ho tro ca partial (`PATCH`) va tuong thich nguoc (`PUT`) |
 | POST | `/api/v1/admin/settings/reset` | ADMIN | Reset cau hinh ve gia tri mac dinh |
 | GET | `/api/v1/admin/settings/status` | ADMIN | Lay cac the trang thai he thong |
 | GET | `/api/v1/admin/settings/version` | ADMIN | Lay thong tin version/runtime hien tai |
+| POST | `/api/v1/admin/settings/test-email` | ADMIN | Gui email thu bang cau hinh SMTP hien tai |
+| GET | `/api/v1/admin/settings/backups` | ADMIN | Liet ke tep backup trong thu muc backup |
+| POST | `/api/v1/admin/settings/backups/{id}/restore` | ADMIN | Phuc hoi tep backup `.sql` / `.sql.gz` |
+| GET | `/api/v1/admin/settings/backups/{id}/download` | ADMIN | Tai tep backup |
+| POST | `/api/v1/admin/settings/cache/clear` | ADMIN | Xoa cache runtime |
 
 ## 9.17 Admin - Home modules
 
 | Method | Path | Role | Mo ta |
 |---|---|---|---|
 | GET | `/api/v1/admin/home-modules` | ADMIN/MANAGER | Danh sach cau hinh module trang chu cho admin |
-| PATCH | `/api/v1/admin/home-modules` | ADMIN | Cap nhat full danh sach module trang chu sau khi reorder/edit/toggle |
+| PATCH / PUT | `/api/v1/admin/home-modules` | ADMIN | Cap nhat full danh sach module trang chu sau khi reorder/edit/toggle |
+
+## 9.18 Admin - Logs
+
+| Method | Path | Role | Mo ta |
+|---|---|---|---|
+| GET | `/api/v1/admin/logs/summary` | ADMIN/MANAGER | Tong hop nhanh log dang nhap va thao tac he thong |
+| GET | `/api/v1/admin/logs/login` | ADMIN/MANAGER | Danh sach log dang nhap that, co filter va pagination |
+| GET | `/api/v1/admin/logs/system` | ADMIN/MANAGER | Danh sach log he thong that, co filter va pagination |
+| GET | `/api/v1/admin/logs/export` | ADMIN/MANAGER | Xuat file Excel cho `login` hoac `system` |
+
+## 9.19 Admin - Reports
+
+| Method | Path | Role | Mo ta |
+|---|---|---|---|
+| GET | `/api/v1/admin/reports/overview` | ADMIN/MANAGER | Du lieu tong hop cho man Bao cao & Thong ke |
+| GET | `/api/v1/admin/reports/export` | ADMIN/MANAGER | Xuat file Excel cho overview/trend/user-activity/top-content |
 
 ---
 
@@ -470,7 +491,10 @@ Query rieng theo module:
 - User list: `q`, `role` (`ADMIN|MANAGER|USER`), `is_active`
 
 Luu y:
-- Cac endpoint update dung `PATCH` se chi ghi de cac field duoc gui len.
+- Cac endpoint update quan trong hien ho tro dong thoi `PATCH` va `PUT`.
+- FE moi nen uu tien `PATCH`.
+- FE cu dang goi `PUT` van duoc ho tro de tranh gay luong.
+- Voi backend hien tai, ca `PATCH` va `PUT` deu giu nguyen field khong gui len.
 - Field nao khong gui trong request se duoc giu nguyen gia tri cu o DB.
 
 Vi du:
@@ -766,6 +790,7 @@ Luu y:
 Luu y:
 - Chi can gui cac field can doi.
 - `smtpPass` khong tra plaintext; response chi tra trang thai da cau hinh va gia tri masked.
+- Neu FE dang goi `PUT`, co the gui cung payload nay.
 
 ### 11.17 PATCH home modules (admin)
 
@@ -793,6 +818,169 @@ Luu y:
 Luu y:
 - Request phai gui day du danh sach module dang cau hinh.
 - `itemCount` la field read-only, backend tu tinh tu du lieu thuc te.
+- Neu FE dang goi `PUT`, co the gui cung payload nay.
+
+### 11.18 Response status settings (admin)
+
+```json
+[
+  {
+    "id": "database",
+    "title": "Co so du lieu",
+    "value": "944.4 GB trong / 1006.9 GB • schema da dung 656.0 KB",
+    "state": "healthy"
+  },
+  {
+    "id": "active_accounts",
+    "title": "Tai khoan hoat dong",
+    "value": "6 / 6 tai khoan dang hoat dong",
+    "state": "healthy"
+  },
+  {
+    "id": "system_logs",
+    "title": "Nhat ky he thong",
+    "value": "Nguyen Minh Duc • thanh cong • vua xong",
+    "state": "healthy"
+  },
+  {
+    "id": "security",
+    "title": "Bao mat",
+    "value": "1 nguy co: 2FA dang tat",
+    "state": "warning"
+  },
+  {
+    "id": "ssl_tls",
+    "title": "SSL/TLS",
+    "value": "Con 81 ngay",
+    "state": "healthy"
+  }
+]
+```
+
+Luu y:
+- `value` la chuoi da format san de FE hien card nhanh.
+- `state` de map mau sac/trang thai UI: `healthy`, `warning`, `error`, `unknown`.
+
+### 11.19 Request test email (admin)
+
+```json
+{
+  "to": "test@example.com",
+  "subject": "Kiem tra SMTP",
+  "body": "Noi dung email thu"
+}
+```
+
+Response thanh cong:
+
+```json
+{
+  "sentTo": "test@example.com",
+  "sentAt": "2026-03-31T17:23:13Z",
+  "message": "Gui email kiem tra thanh cong"
+}
+```
+
+### 11.20 Response backups (admin)
+
+```json
+[
+  {
+    "id": "c21va2Uuc3Fs",
+    "fileName": "smoke.sql",
+    "sizeBytes": 10,
+    "modifiedAt": "2026-03-31T17:23:48Z",
+    "restorable": true
+  }
+]
+```
+
+Luu y:
+- `id` la backup id da encode, FE dung lai cho `download` va `restore`.
+- Endpoint `download` va cac endpoint export tra file binary, khong tra `ApiResponse`.
+
+### 11.21 Response logs summary
+
+```json
+{
+  "totalLogins": 3,
+  "successfulLogins": 3,
+  "failedLogins": 0,
+  "systemActions": 16
+}
+```
+
+### 11.22 Response login log row
+
+```json
+{
+  "id": 25,
+  "userId": 1,
+  "userName": "Nguyen Minh Duc",
+  "unitName": "Phong Tong hop",
+  "action": "LOGIN",
+  "ipAddress": "172.23.0.1",
+  "device": "Mozilla/5.0 ...",
+  "status": "SUCCESS",
+  "failureReason": null,
+  "createdAt": "2026-03-31T17:24:09Z"
+}
+```
+
+### 11.23 Response system log row
+
+```json
+{
+  "id": 24,
+  "actorId": 1,
+  "actorName": "Nguyen Minh Duc",
+  "module": "SETTINGS",
+  "action": "RESTORE",
+  "description": "smoke.sql",
+  "level": "INFO",
+  "metadata": "Phuc hoi backup",
+  "createdAt": "2026-03-31T17:24:01Z"
+}
+```
+
+### 11.24 Response reports overview
+
+```json
+{
+  "summaryCards": [
+    {
+      "id": "views",
+      "title": "Tong luot xem",
+      "value": "42",
+      "change": 100.0,
+      "period": "so voi ky truoc",
+      "iconKey": "views"
+    }
+  ],
+  "trendSeries": [
+    {
+      "label": "T1",
+      "views": 0,
+      "edits": 0,
+      "logins": 0
+    }
+  ],
+  "userActivity": [
+    {
+      "name": "Quan tri vien",
+      "value": 1,
+      "activity": 100.0
+    }
+  ],
+  "topContent": [
+    {
+      "title": "Lich su hinh thanh Binh chung",
+      "views": 12,
+      "trend": 100.0
+    }
+  ]
+}
+```
 
 ---
 
@@ -938,6 +1126,105 @@ curl -i -X PATCH http://localhost:8080/api/v1/admin/home-modules \
   -d "{\"modules\":[{\"id\":\"banner\",\"name\":\"Banner Chinh\",\"description\":\"Hinh anh banner xoay vong tren dau trang chu\",\"enabled\":true,\"sortOrder\":1},{\"id\":\"truyen-thong\",\"name\":\"Truyen thong\",\"description\":\"Noi dung noi bat\",\"enabled\":true,\"sortOrder\":2},{\"id\":\"net-tieu-bieu\",\"name\":\"Net tieu bieu\",\"description\":\"Guong dien hinh tieu bieu\",\"enabled\":true,\"sortOrder\":3},{\"id\":\"thu-truong\",\"name\":\"Thu truong\",\"description\":\"Ho so thu truong\",\"enabled\":true,\"sortOrder\":4},{\"id\":\"anh-hung\",\"name\":\"Anh hung\",\"description\":\"Ho so anh hung\",\"enabled\":true,\"sortOrder\":5},{\"id\":\"ca-khuc\",\"name\":\"Ca khuc\",\"description\":\"Thu vien bai hat\",\"enabled\":true,\"sortOrder\":6},{\"id\":\"tin-tuc\",\"name\":\"Tin tuc\",\"description\":\"Cac ban tin tong hop\",\"enabled\":false,\"sortOrder\":7}]}"
 ```
 
+### 14.13 Lay logs summary
+
+```bash
+curl -i http://localhost:8080/api/v1/admin/logs/summary \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+### 14.14 Lay logs login
+
+```bash
+curl -i "http://localhost:8080/api/v1/admin/logs/login?page=1&page_size=20&status=SUCCESS&period=month" \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+### 14.15 Lay logs system
+
+```bash
+curl -i "http://localhost:8080/api/v1/admin/logs/system?page=1&page_size=20&module=SETTINGS&period=month" \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+### 14.16 Lay reports overview
+
+```bash
+curl -i "http://localhost:8080/api/v1/admin/reports/overview?period=year" \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+### 14.17 Export logs Excel
+
+```bash
+curl -L "http://localhost:8080/api/v1/admin/logs/export?type=login&format=xlsx" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -o login-logs.xlsx
+```
+
+### 14.18 Export reports Excel
+
+```bash
+curl -L "http://localhost:8080/api/v1/admin/reports/export?type=overview&period=year&format=xlsx" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -o reports-overview.xlsx
+```
+
+### 14.19 Gui email thu
+
+```bash
+curl -i -X POST http://localhost:8080/api/v1/admin/settings/test-email \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d "{\"to\":\"test@example.com\",\"subject\":\"Kiem tra SMTP\",\"body\":\"Noi dung email thu\"}"
+```
+
+### 14.20 Lay danh sach backup
+
+```bash
+curl -i http://localhost:8080/api/v1/admin/settings/backups \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+### 14.21 Tai backup
+
+```bash
+curl -L "http://localhost:8080/api/v1/admin/settings/backups/<BACKUP_ID>/download" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -o backup.sql
+```
+
+### 14.22 Khoi phuc backup
+
+```bash
+curl -i -X POST "http://localhost:8080/api/v1/admin/settings/backups/<BACKUP_ID>/restore" \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+### 14.23 Xoa cache
+
+```bash
+curl -i -X POST http://localhost:8080/api/v1/admin/settings/cache/clear \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+### 14.24 Upload media qua form-data
+
+```bash
+curl -i -X POST http://localhost:8080/api/v1/admin/media \
+  -H "Authorization: Bearer <TOKEN>" \
+  -F "file=@/path/to/file.jpg"
+```
+
+### 14.25 FE integration notes
+
+- Cac endpoint update quan trong hien ho tro ca `PATCH` va `PUT`, nhung FE moi nen uu tien `PATCH`.
+- Cac endpoint export/download (`/logs/export`, `/reports/export`, `/settings/backups/{id}/download`) tra `blob/file`, khong tra `ApiResponse`.
+- Namespace `/api/v1/public/**` van can `Authorization: Bearer <TOKEN>`.
+- `GET /api/v1/public/content-items/{id}` tu dong tang view va tao audit log.
+- `GET /api/v1/admin/settings/status` tra `data` la mang card, FE khong can tu tinh toan lai cac gia tri server.
+- `GET /api/v1/admin/reports/overview` da tra du lieu dung cho dashboard bao cao: `summaryCards`, `trendSeries`, `userActivity`, `topContent`.
+
 ---
 
 ## 15) Troubleshooting (cac loi thuong gap)
@@ -1027,6 +1314,7 @@ docker exec -it bcttg-mysql mysql -uroot -p<MYSQL_ROOT_PASSWORD> -e "SHOW DATABA
 Truong hop thuong gap:
 - `MANAGER` goi API ghi (`POST/PATCH/DELETE`) cua `/api/v1/admin/users` -> `403`.
 - `ADMIN` tu khoa/xoa/chuyen role chinh minh -> `403`.
+- User da bi khoa dang login -> `403` voi message `User is inactive`.
 - Password khong dat policy (thieu chu hoa/thuong/so, < 8 ky tu) -> `400`.
 - `phone` khong hop le (khong phai so hoac do dai khong nam trong 8-15) -> `400`.
 
@@ -1040,6 +1328,40 @@ Xu ly:
 1. Goi `POST /api/v1/auth/login` de lay JWT.
 2. Gui lai request voi header bearer.
 3. Neu dung Swagger/Postman/frontend, dam bao khong gui token cu het han.
+
+## 15.10 Loi `413 File upload vuot gioi han cho phep`
+
+Nguyen nhan:
+- Tep upload lon hon limit app/Nginx.
+
+Response backend:
+
+```json
+{
+  "success": false,
+  "data": null,
+  "meta": null,
+  "error": {
+    "code": "BAD_REQUEST",
+    "message": "File upload vuot gioi han cho phep",
+    "details": ["Kich thuoc tep vuot gioi han cho phep"]
+  }
+}
+```
+
+Xu ly:
+1. FE kiem tra kich thuoc file truoc khi upload.
+2. Neu dung reverse proxy production, can dong bo limit o Nginx/Ingress.
+3. Voi app hien tai, Docker da duoc nang limit media trong `application.yml` va `docker-compose.yml`.
+
+## 15.11 Loi `405 Method Not Allowed`
+
+Nguyen nhan thuong gap:
+- Goi sai method so voi contract endpoint.
+
+Luu y thuc te:
+- Cac endpoint update chinh da ho tro ca `PATCH` va `PUT`.
+- Cac endpoint action nhu `/visibility`, `/reorder`, `/pin`, `/archive`, `/reset-password` van chi dung method ghi ro trong bang endpoint.
 
 ---
 
@@ -1160,6 +1482,7 @@ Ngay cap nhat: `2026-03-07`
 - `GET /api/v1/admin/settings`
   - Tra ve toan bo form data.
 - `PATCH /api/v1/admin/settings`
+  - Hien tai implementation cung ho tro `PUT` de tuong thich nguoc.
   - Luu toan bo cau hinh.
 - `GET /api/v1/admin/settings/status`
   - Tra ve card suc khoe he thong.
@@ -1230,6 +1553,7 @@ Ngay cap nhat: `2026-03-07`
 - `GET /api/v1/admin/home-modules`
   - Tra ve danh sach module da sap xep.
 - `PATCH /api/v1/admin/home-modules`
+  - Hien tai implementation cung ho tro `PUT` de tuong thich nguoc.
   - Nhan full list sau khi admin reorder/edit/toggle.
 - `GET /api/v1/public/home-modules`
   - Hien tai backend dang yeu cau Bearer token cho namespace public nay.

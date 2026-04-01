@@ -14,6 +14,7 @@ import com.bcttg.module.content.entity.ContentItem;
 import com.bcttg.module.content.entity.ContentType;
 import com.bcttg.module.content.repository.ContentCategoryRepository;
 import com.bcttg.module.content.repository.ContentItemRepository;
+import com.bcttg.module.dashboard.service.SystemAuditTrailService;
 import com.bcttg.module.media.entity.MediaAsset;
 import com.bcttg.module.media.repository.MediaAssetRepository;
 
@@ -29,11 +30,18 @@ public class ContentItemService {
     private final ContentCategoryRepository categoryRepository;
     private final ContentItemRepository itemRepository;
     private final MediaAssetRepository mediaRepository;
+    private final SystemAuditTrailService auditTrailService;
 
-    public ContentItemService(ContentCategoryRepository categoryRepository, ContentItemRepository itemRepository, MediaAssetRepository mediaRepository) {
+    public ContentItemService(
+        ContentCategoryRepository categoryRepository,
+        ContentItemRepository itemRepository,
+        MediaAssetRepository mediaRepository,
+        SystemAuditTrailService auditTrailService
+    ) {
         this.categoryRepository = categoryRepository;
         this.itemRepository = itemRepository;
         this.mediaRepository = mediaRepository;
+        this.auditTrailService = auditTrailService;
     }
 
     public Page<ContentItem> findAll(Long categoryId, ContentType type, String q, Boolean isVisible, Pageable pageable) {
@@ -188,10 +196,12 @@ public class ContentItemService {
     }
 
     @Transactional
-    public ContentItem incrementViewCount(Long id) {
+    public ContentItem incrementViewCount(Long id, String actorPhone) {
         ContentItem item = getVisibleById(id);
         item.setViewCount(item.getViewCount() + 1);
-        return itemRepository.save(item);
+        ContentItem saved = itemRepository.save(item);
+        auditTrailService.record(actorPhone, "VIEW", "CONTENT", saved.getTitle(), "content_id=" + saved.getId());
+        return saved;
     }
 
     private <T> T valueOrDefault(T requestedValue, T currentValue) {

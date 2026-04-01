@@ -20,6 +20,8 @@ import com.bcttg.module.dashboard.repository.SystemAuditLogRepository;
 import com.bcttg.module.profile.entity.DataProfile;
 import com.bcttg.module.profile.entity.ProfileType;
 import com.bcttg.module.profile.repository.DataProfileRepository;
+import com.bcttg.module.settings.dto.SystemStatusCardResponse;
+import com.bcttg.module.settings.service.ServerRuntimeStatusService;
 import com.bcttg.module.song.entity.Song;
 import com.bcttg.module.song.repository.SongRepository;
 import com.bcttg.module.user.repository.UserAccountRepository;
@@ -35,19 +37,22 @@ public class AdminDashboardService {
     private final SongRepository songRepository;
     private final UserAccountRepository userAccountRepository;
     private final SystemAuditLogRepository systemAuditLogRepository;
+    private final ServerRuntimeStatusService runtimeStatusService;
 
     public AdminDashboardService(
         ContentItemRepository contentItemRepository,
         DataProfileRepository dataProfileRepository,
         SongRepository songRepository,
         UserAccountRepository userAccountRepository,
-        SystemAuditLogRepository systemAuditLogRepository
+        SystemAuditLogRepository systemAuditLogRepository,
+        ServerRuntimeStatusService runtimeStatusService
     ) {
         this.contentItemRepository = contentItemRepository;
         this.dataProfileRepository = dataProfileRepository;
         this.songRepository = songRepository;
         this.userAccountRepository = userAccountRepository;
         this.systemAuditLogRepository = systemAuditLogRepository;
+        this.runtimeStatusService = runtimeStatusService;
     }
 
     @Transactional(readOnly = true)
@@ -72,7 +77,7 @@ public class AdminDashboardService {
         List<AdminDashboardResponse.LabelValueItem> contentDistribution = buildDistribution();
         List<AdminDashboardResponse.LabelValueItem> weeklyVisits = buildWeeklyVisits(now, zoneId);
         List<AdminDashboardResponse.ActivityItem> recentActivities = buildRecentActivities();
-        List<AdminDashboardResponse.StatusItem> systemStatuses = buildSystemStatuses(totalAccounts, totalPosts, totalSongs, totalProfiles);
+        List<AdminDashboardResponse.StatusItem> systemStatuses = buildSystemStatuses();
         List<AdminDashboardResponse.PendingItem> pendingItems = buildPendingItems();
 
         return new AdminDashboardResponse(
@@ -182,27 +187,14 @@ public class AdminDashboardService {
         );
     }
 
-    private List<AdminDashboardResponse.StatusItem> buildSystemStatuses(
-        long totalAccounts,
-        long totalPosts,
-        long totalSongs,
-        long totalProfiles
-    ) {
-        String dataLoad = (totalPosts + totalSongs + totalProfiles) > 0 ? "On dinh" : "Can khoi tao du lieu";
-        String accountStatus = totalAccounts > 0 ? (totalAccounts + " tai khoan dang hoat dong") : "Chua co tai khoan";
-        Instant lastActionAt = systemAuditLogRepository.findTop10ByDeletedAtIsNullOrderByCreatedAtDesc().stream()
-            .map(SystemAuditLog::getCreatedAt)
-            .findFirst()
-            .orElse(Instant.now());
-        String lastAction = "Lan cuoi " + ChronoUnit.MINUTES.between(lastActionAt, Instant.now()) + " phut truoc";
+    private List<AdminDashboardResponse.StatusItem> buildSystemStatuses() {
+        return runtimeStatusService.getStatusCards().stream()
+            .map(this::mapStatusCard)
+            .toList();
+    }
 
-        return List.of(
-            new AdminDashboardResponse.StatusItem("Co so du lieu", dataLoad, "GOOD"),
-            new AdminDashboardResponse.StatusItem("Tai khoan", accountStatus, "GOOD"),
-            new AdminDashboardResponse.StatusItem("Nhat ky he thong", lastAction, "GOOD"),
-            new AdminDashboardResponse.StatusItem("Bao mat", "Da bat JWT bearer token", "GOOD"),
-            new AdminDashboardResponse.StatusItem("SSL/TLS", "Quan ly tai lop reverse proxy", "INFO")
-        );
+    private AdminDashboardResponse.StatusItem mapStatusCard(SystemStatusCardResponse status) {
+        return new AdminDashboardResponse.StatusItem(status.getTitle(), status.getValue(), status.getState());
     }
 
     private List<AdminDashboardResponse.PendingItem> buildPendingItems() {

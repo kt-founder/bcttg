@@ -50,4 +50,10 @@ public interface ContentItemRepository extends JpaRepository<ContentItem, Long>,
 
     @EntityGraph(attributePaths = {"coverMedia", "category"})
     java.util.List<ContentItem> findTop5ByDeletedAtIsNullAndIsVisibleFalseOrderByUpdatedAtDesc();
+
+    @Query("select coalesce(sum(i.viewCount), 0) from ContentItem i where i.deletedAt is null")
+    long sumViewCount();
+
+    @EntityGraph(attributePaths = {"coverMedia", "category"})
+    java.util.List<ContentItem> findTop10ByDeletedAtIsNullOrderByViewCountDescUpdatedAtDesc();
 }
