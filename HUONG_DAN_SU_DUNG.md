@@ -147,6 +147,7 @@ Thu muc migration:
 - `src/main/resources/db/migration/V9__settings_home_modules_schema.sql`
 - `src/main/resources/db/migration/V10__settings_home_modules_seed.sql`
 - `src/main/resources/db/migration/V11__history_diagram_content.sql`
+- `src/main/resources/db/migration/V12__song_metadata.sql`
 
 Nguyen tac lam viec voi migration:
 1. Khong sua file migration da chay tren moi truong dung.
@@ -295,6 +296,12 @@ Pagination (`meta`) khi list:
 |---|---|---|---|
 | POST | `/api/v1/auth/login` | Public | Dang nhap bang phone/password, nhan JWT |
 
+## 9.1.1 User - Me
+
+| Method | Path | Auth | Mo ta |
+|---|---|---|---|
+| GET | `/api/v1/user/me` | Bearer (ADMIN/MANAGER/USER) | Lay thong tin co ban cua chinh tai khoan dang dang nhap |
+
 ## 9.2 Public - Content
 
 Luu y:
@@ -308,6 +315,95 @@ Luu y:
 | GET | `/api/v1/public/content-items` | Bearer (ADMIN/MANAGER/USER) | Danh sach bai viet cong khai |
 | GET | `/api/v1/public/content-items/{id}` | Bearer (ADMIN/MANAGER/USER) | Chi tiet bai viet cong khai (tu tang view_count) |
 
+### 9.2.1 Luong category cho FE
+
+Muc nay dung de FE map tu `home-modules` sang `content-categories` dung logic hien tai cua backend.
+
+Nguyen tac can nho:
+- `home_modules` va `content_categories` la 2 bang khac nhau.
+- `home_modules.id` chi la module ngoai trang chu.
+- `content_categories.parentId = null` la category goc cua module content.
+- Category goc nay dung de lam "parent node" de lay ra level ben trong.
+- He thong chi cho phep toi da 2 tang category:
+  - tang 1: category goc, `parentId = null`
+  - tang 2: category con, `parentId = <id cua category goc>`
+- `content_items` chi nam o tang 2, khong nam truc tiep o category goc.
+
+Mapping can dung:
+
+| Home module id | Content type | Root category can tim |
+|---|---|---|
+| `truyen-thong` | `TRUYEN_THONG` | `parentId = null` va `slug = "truyen-thong"` |
+| `net-tieu-bieu` | `NET_TIEU_BIEU` | `parentId = null` va `slug = "net-tieu-bieu"` |
+
+Luu y:
+- `SO_DO_LICH_SU` dung cung co che category, nhung khong di qua `GET /api/v1/public/home-modules`.
+- Neu FE can vao "So do lich su" thi tim root category voi `type = SO_DO_LICH_SU`, `parentId = null`, `slug = "so-do-lich-su"`.
+
+Trinh tu de lay du 2 level category trong 1 module:
+
+1. Goi `GET /api/v1/public/home-modules`
+   - Lay danh sach module dang bat.
+   - Chon module content can dung, vi du `id = "truyen-thong"`.
+
+2. Map `homeModule.id` sang `ContentType`
+   - `truyen-thong` -> `TRUYEN_THONG`
+   - `net-tieu-bieu` -> `NET_TIEU_BIEU`
+
+3. Goi `GET /api/v1/public/content-categories?type=<TYPE>`
+   - Ket qua tra ve ca category goc va category con cua type do.
+   - Tim category goc bang dieu kien:
+     - `parentId = null`
+     - `slug = homeModule.id`
+
+4. Lay `rootCategory.id` vua tim duoc, roi goi:
+   - `GET /api/v1/public/content-categories?type=<TYPE>&parent_id=<rootCategory.id>`
+   - Ket qua la danh sach category tang 2 nam ben trong module.
+
+5. Khi user chon 1 category tang 2, goi:
+   - `GET /api/v1/public/content-items?category_id=<childCategory.id>`
+   - Ket qua la danh sach bai viet cua category do.
+
+6. Khi user chon chi tiet bai viet, goi:
+   - `GET /api/v1/public/content-items/{id}`
+
+FE co the hieu cau truc nhu sau:
+
+```text
+home-module
+  -> root content-category (parentId = null, slug = homeModule.id)
+    -> child content-category level 2
+      -> content-items
+```
+
+Vi du voi module `truyen-thong`:
+
+1. `GET /api/v1/public/home-modules`
+2. Chon item co `id = "truyen-thong"`
+3. `GET /api/v1/public/content-categories?type=TRUYEN_THONG`
+4. Tim root:
+   - `parentId = null`
+   - `slug = "truyen-thong"`
+5. Neu root co `id = 10`, goi:
+   - `GET /api/v1/public/content-categories?type=TRUYEN_THONG&parent_id=10`
+6. Lay danh sach category con, vi du:
+   - `lich-su-truyen-thong`
+   - `guong-tieu-bieu`
+   - `huan-luyen`
+7. Khi user bam `guong-tieu-bieu`, goi:
+   - `GET /api/v1/public/content-items?category_id=<id cua guong-tieu-bieu>`
+
+Khuyen nghi cho FE:
+- Khong dung `home-module.id` de goi thang `content-items`.
+- Luon di qua root category truoc, vi backend dang to chuc theo cay category.
+- Neu can render menu 2 tang, FE can luu:
+  - `homeModule`
+  - `rootCategory`
+  - `childCategories[]`
+- Neu can toi uu request, FE van co the goi 1 lan `GET /api/v1/public/content-categories?type=<TYPE>`, sau do tu tach:
+  - 1 root category: `parentId = null`, `slug = homeModule.id`
+  - danh sach child: `parentId = rootCategory.id`
+
 ## 9.3 Public - Song
 
 | Method | Path | Auth | Mo ta |
@@ -315,7 +411,7 @@ Luu y:
 | GET | `/api/v1/public/song-categories` | Bearer (ADMIN/MANAGER/USER) | Danh sach danh muc bai hat cong khai |
 | GET | `/api/v1/public/song-categories/{id}` | Bearer (ADMIN/MANAGER/USER) | Chi tiet danh muc bai hat cong khai |
 | GET | `/api/v1/public/songs` | Bearer (ADMIN/MANAGER/USER) | Danh sach bai hat cong khai |
-| GET | `/api/v1/public/songs/{id}` | Bearer (ADMIN/MANAGER/USER) | Chi tiet bai hat cong khai |
+| GET | `/api/v1/public/songs/{id}` | Bearer (ADMIN/MANAGER/USER) | Chi tiet bai hat cong khai, tu dong tang `listenCount` |
 
 ## 9.4 Public - Data profile
 
@@ -555,6 +651,8 @@ Response content item hien tra them:
 {
   "categoryId": 2,
   "title": "Bai hat moi",
+  "author": "Tac gia BCTTG",
+  "releaseYear": 2025,
   "lyric": "Noi dung loi bai hat...",
   "audioMediaId": 4,
   "audioUrl": null,
@@ -570,6 +668,12 @@ Rule bat buoc:
   - `audioUrl`
 
 Neu gui ca 2 hoac khong gui cai nao -> `BAD_REQUEST`.
+
+Response song hien tra day du:
+- `author`
+- `releaseYear`
+- `durationSec`
+- `listenCount`
 
 ### 11.4 Reorder (vi du song)
 
@@ -663,6 +767,7 @@ Rule:
     "totalProfiles": 89,
     "totalSongs": 24,
     "totalAccounts": 42,
+    "totalViews": 77400,
     "viewsToday": 1247,
     "editsToday": 18
   },
@@ -671,13 +776,13 @@ Rule:
     { "label": "T2", "value": 52 }
   ],
   "contentDistribution": [
-    { "label": "Truyen thong", "value": 31 },
-    { "label": "Net tieu bieu", "value": 22 },
-    { "label": "So do lich su", "value": 11 },
-    { "label": "Ho so thu truong", "value": 12 },
-    { "label": "Ho so chien si", "value": 37 },
-    { "label": "Ho so anh hung", "value": 8 },
-    { "label": "Ca khuc", "value": 24 }
+    { "label": "Truyền thống", "value": 31 },
+    { "label": "Nét tiêu biểu", "value": 22 },
+    { "label": "Sơ đồ lịch sử", "value": 11 },
+    { "label": "Hồ sơ thủ trưởng", "value": 12 },
+    { "label": "Hồ sơ chiến sĩ", "value": 37 },
+    { "label": "Hồ sơ anh hùng", "value": 8 },
+    { "label": "Ca khúc", "value": 24 }
   ],
   "weeklyVisits": [
     { "label": "T2", "value": 120 },
@@ -688,6 +793,11 @@ Rule:
   "pendingItems": []
 }
 ```
+
+Rule dashboard overview:
+- `summary.totalViews` la tong `view_count` thuc te cua toan bo content item.
+- `summary.viewsToday` la so luot xem phat sinh trong ngay hien tai.
+- `weeklyVisits` la so luot dang nhap thanh cong theo tung ngay trong 7 ngay gan nhat, lay tu `system_audit_logs`.
 
 ### 11.11 Tao user (admin)
 
@@ -740,6 +850,34 @@ Rule:
 
 Rule:
 - Password moi cung dung policy nhu luc tao tai khoan.
+
+### 11.14.1 Response `GET /api/v1/user/me`
+
+```json
+{
+  "data": {
+    "createdAt": "2026-02-06T07:06:30Z",
+    "id": 1,
+    "isActive": true,
+    "phone": "0900000001",
+    "profile": {
+      "address": "123 Nguyen Trai, Ha Noi",
+      "birthDate": "1979-04-12",
+      "email": "duc.nguyen@bcttg.local",
+      "fullName": "Nguyen Minh Duc",
+      "id": 1,
+      "position": "Giam doc",
+      "rankName": "Dai ta",
+      "unitName": "Phong Tong hop"
+    },
+    "role": "ADMIN",
+    "updatedAt": "2026-02-06T07:06:30Z"
+  },
+  "meta": null,
+  "success": true,
+  "error": null
+}
+```
 
 ### 11.15 Vi du so do lich su dung chung module content
 
@@ -827,7 +965,7 @@ Luu y:
   {
     "id": "database",
     "title": "Co so du lieu",
-    "value": "944.4 GB trong / 1006.9 GB • schema da dung 656.0 KB",
+    "value": "944.4 GB trong / 1006.9 GB â€¢ schema da dung 656.0 KB",
     "state": "healthy"
   },
   {
@@ -839,7 +977,7 @@ Luu y:
   {
     "id": "system_logs",
     "title": "Nhat ky he thong",
-    "value": "Nguyen Minh Duc • thanh cong • vua xong",
+    "value": "Nguyen Minh Duc â€¢ thanh cong â€¢ vua xong",
     "state": "healthy"
   },
   {
@@ -1016,6 +1154,7 @@ Vi du:
 
 Cac nhom tag hien thi:
 - Auth
+- Current User
 - Content Categories (Public/Admin)
 - Content Items (Public/Admin)
 - Data Profiles (Public/Admin)
@@ -1099,6 +1238,13 @@ curl -i -X PATCH http://localhost:8080/api/v1/admin/users/10/reset-password \
   -H "Authorization: Bearer <TOKEN>" \
   -H "Content-Type: application/json" \
   -d "{\"newPassword\":\"Reset@2026\"}"
+```
+
+### 14.9.1 Lay thong tin cua chinh minh
+
+```bash
+curl -i http://localhost:8080/api/v1/user/me \
+  -H "Authorization: Bearer <TOKEN>"
 ```
 
 ### 14.10 Lay home modules public
@@ -1221,6 +1367,7 @@ curl -i -X POST http://localhost:8080/api/v1/admin/media \
 - Cac endpoint update quan trong hien ho tro ca `PATCH` va `PUT`, nhung FE moi nen uu tien `PATCH`.
 - Cac endpoint export/download (`/logs/export`, `/reports/export`, `/settings/backups/{id}/download`) tra `blob/file`, khong tra `ApiResponse`.
 - Namespace `/api/v1/public/**` van can `Authorization: Bearer <TOKEN>`.
+- `GET /api/v1/user/me` tra cung schema user nhu admin detail, nhung chi tra du lieu cua user dang dang nhap.
 - `GET /api/v1/public/content-items/{id}` tu dong tang view va tao audit log.
 - `GET /api/v1/admin/settings/status` tra `data` la mang card, FE khong can tu tinh toan lai cac gia tri server.
 - `GET /api/v1/admin/reports/overview` da tra du lieu dung cho dashboard bao cao: `summaryCards`, `trendSeries`, `userActivity`, `topContent`.
@@ -1333,6 +1480,7 @@ Xu ly:
 
 Nguyen nhan:
 - Tep upload lon hon limit app/Nginx.
+- Neu response la HTML mac dinh cua `nginx/1.14.0 (Ubuntu)` thi request dang bi chan tai Nginx, chua vao backend Spring Boot.
 
 Response backend:
 
@@ -1352,7 +1500,8 @@ Response backend:
 Xu ly:
 1. FE kiem tra kich thuoc file truoc khi upload.
 2. Neu dung reverse proxy production, can dong bo limit o Nginx/Ingress.
-3. Voi app hien tai, Docker da duoc nang limit media trong `application.yml` va `docker-compose.yml`.
+3. Voi Nginx, can cau hinh them `client_max_body_size 220M;` trong `server` hoac `location` cua domain API.
+4. Voi app hien tai, Docker da duoc nang limit media trong `application.yml` va `docker-compose.yml`.
 
 ## 15.11 Loi `405 Method Not Allowed`
 

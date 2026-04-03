@@ -63,14 +63,16 @@ public class AdminDashboardResponse {
         private final long totalProfiles;
         private final long totalSongs;
         private final long totalAccounts;
+        private final long totalViews;
         private final long viewsToday;
         private final long editsToday;
 
-        public Summary(long totalPosts, long totalProfiles, long totalSongs, long totalAccounts, long viewsToday, long editsToday) {
+        public Summary(long totalPosts, long totalProfiles, long totalSongs, long totalAccounts, long totalViews, long viewsToday, long editsToday) {
             this.totalPosts = totalPosts;
             this.totalProfiles = totalProfiles;
             this.totalSongs = totalSongs;
             this.totalAccounts = totalAccounts;
+            this.totalViews = totalViews;
             this.viewsToday = viewsToday;
             this.editsToday = editsToday;
         }
@@ -89,6 +91,10 @@ public class AdminDashboardResponse {
 
         public long getTotalAccounts() {
             return totalAccounts;
+        }
+
+        public long getTotalViews() {
+            return totalViews;
         }
 
         public long getViewsToday() {

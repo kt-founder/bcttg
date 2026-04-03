@@ -69,12 +69,13 @@ public class AdminDashboardService {
         long totalProfiles = dataProfileRepository.countByDeletedAtIsNull();
         long totalSongs = countSongs();
         long totalAccounts = userAccountRepository.countByDeletedAtIsNull();
+        long totalViews = contentItemRepository.sumViewCount();
         long viewsToday = systemAuditLogRepository.countByDeletedAtIsNullAndActionTypeAndCreatedAtBetween("VIEW", startOfToday, startOfTomorrow);
         long editsToday = systemAuditLogRepository.countByDeletedAtIsNullAndActionTypeInAndCreatedAtBetween(
             List.of("CREATE", "UPDATE", "DELETE"), startOfToday, startOfTomorrow);
 
         AdminDashboardResponse.Summary summary = new AdminDashboardResponse.Summary(
-            totalPosts, totalProfiles, totalSongs, totalAccounts, viewsToday, editsToday);
+            totalPosts, totalProfiles, totalSongs, totalAccounts, totalViews, viewsToday, editsToday);
 
         List<AdminDashboardResponse.LabelValueItem> monthlyContent = buildMonthlyContent(now, zoneId);
         List<AdminDashboardResponse.LabelValueItem> contentDistribution = buildDistribution();
@@ -142,13 +143,13 @@ public class AdminDashboardService {
         long caKhuc = countSongs();
 
         return List.of(
-            new AdminDashboardResponse.LabelValueItem("Truyen thong", truyenThong),
-            new AdminDashboardResponse.LabelValueItem("Net tieu bieu", netTieuBieu),
-            new AdminDashboardResponse.LabelValueItem("So do lich su", soDoLichSu),
-            new AdminDashboardResponse.LabelValueItem("Ho so thu truong", hoSoThuTruong),
-            new AdminDashboardResponse.LabelValueItem("Ho so chien si", hoSoChienSi),
-            new AdminDashboardResponse.LabelValueItem("Ho so anh hung", hoSoAnhHung),
-            new AdminDashboardResponse.LabelValueItem("Ca khuc", caKhuc)
+            new AdminDashboardResponse.LabelValueItem("Truyền thống", truyenThong),
+            new AdminDashboardResponse.LabelValueItem("Nét tiêu biểu", netTieuBieu),
+            new AdminDashboardResponse.LabelValueItem("Sơ đồ lịch sử", soDoLichSu),
+            new AdminDashboardResponse.LabelValueItem("Hồ sơ thủ trưởng", hoSoThuTruong),
+            new AdminDashboardResponse.LabelValueItem("Hồ sơ chiến sĩ", hoSoChienSi),
+            new AdminDashboardResponse.LabelValueItem("Hồ sơ anh hùng", hoSoAnhHung),
+            new AdminDashboardResponse.LabelValueItem("Ca khúc", caKhuc)
         );
     }
 
@@ -159,7 +160,7 @@ public class AdminDashboardService {
         Instant toTime = today.plusDays(1).atStartOfDay(zoneId).toInstant();
 
         Map<LocalDate, Long> totals = new HashMap<>();
-        for (Object[] row : systemAuditLogRepository.countGroupedByDate("VIEW", fromTime, toTime)) {
+        for (Object[] row : systemAuditLogRepository.countSuccessfulLoginsGroupedByDate(fromTime, toTime)) {
             LocalDate day = toLocalDate(row[0], zoneId);
             long count = ((Number) row[1]).longValue();
             totals.put(day, count);

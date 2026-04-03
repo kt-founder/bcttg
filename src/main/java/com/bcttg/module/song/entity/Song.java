@@ -23,6 +23,12 @@ public class Song extends BaseEntity {
     @Column(nullable = false, length = 300)
     private String title;
 
+    @Column(length = 200)
+    private String author;
+
+    @Column(name = "release_year")
+    private Integer releaseYear;
+
     @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String lyric;
 
@@ -34,6 +40,9 @@ public class Song extends BaseEntity {
     private String audioUrl;
 
     private Integer durationSec;
+
+    @Column(name = "listen_count", nullable = false)
+    private Integer listenCount = 0;
 
     @Column(nullable = false)
     private Boolean isVisible = true;
@@ -55,6 +64,22 @@ public class Song extends BaseEntity {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(String author) {
+        this.author = author;
+    }
+
+    public Integer getReleaseYear() {
+        return releaseYear;
+    }
+
+    public void setReleaseYear(Integer releaseYear) {
+        this.releaseYear = releaseYear;
     }
 
     public String getLyric() {
@@ -87,6 +112,14 @@ public class Song extends BaseEntity {
 
     public void setDurationSec(Integer durationSec) {
         this.durationSec = durationSec;
+    }
+
+    public Integer getListenCount() {
+        return listenCount;
+    }
+
+    public void setListenCount(Integer listenCount) {
+        this.listenCount = listenCount;
     }
 
     public Boolean getIsVisible() {

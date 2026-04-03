@@ -35,6 +35,7 @@ public class AuditLogMessageService {
         return switch (normalize(log.getActionType())) {
             case "LOGIN" -> "Đăng nhập";
             case "VIEW" -> "Xem dữ liệu";
+            case "LISTEN" -> "Nghe ca khúc";
             case "CREATE" -> "Tạo mới";
             case "UPDATE" -> "Cập nhật";
             case "DELETE" -> "Xóa";
@@ -70,6 +71,9 @@ public class AuditLogMessageService {
         }
         if ("VIEW".equals(actionType) && "CONTENT".equals(moduleName)) {
             return "xem nội dung " + wrapEntity(log.getEntityName());
+        }
+        if ("LISTEN".equals(actionType) && "SONG".equals(moduleName)) {
+            return "nghe ca khúc " + wrapEntity(log.getEntityName());
         }
         if ("SETTINGS".equals(moduleName) && "TEST_EMAIL".equals(actionType)) {
             return "gửi email kiểm tra tới " + wrapEntity(log.getEntityName());

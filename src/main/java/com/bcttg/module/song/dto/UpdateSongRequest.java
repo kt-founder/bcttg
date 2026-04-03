@@ -8,6 +8,10 @@ public class UpdateSongRequest {
     @Pattern(regexp = ".*\\S.*", message = "must not be blank")
     private String title;
     @Pattern(regexp = ".*\\S.*", message = "must not be blank")
+    private String author;
+    @Min(0)
+    private Integer releaseYear;
+    @Pattern(regexp = ".*\\S.*", message = "must not be blank")
     private String lyric;
     private Long audioMediaId;
     private String audioUrl;
@@ -30,6 +34,22 @@ public class UpdateSongRequest {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(String author) {
+        this.author = author;
+    }
+
+    public Integer getReleaseYear() {
+        return releaseYear;
+    }
+
+    public void setReleaseYear(Integer releaseYear) {
+        this.releaseYear = releaseYear;
     }
 
     public String getLyric() {

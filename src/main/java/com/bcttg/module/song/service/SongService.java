@@ -98,10 +98,13 @@ public class SongService {
         Song song = new Song();
         song.setCategory(category);
         song.setTitle(request.getTitle());
+        song.setAuthor(request.getAuthor());
+        song.setReleaseYear(request.getReleaseYear());
         song.setLyric(request.getLyric());
         song.setAudioMedia(audioMedia);
         song.setAudioUrl(request.getAudioUrl());
         song.setDurationSec(request.getDurationSec());
+        song.setListenCount(0);
         song.setIsVisible(Optional.ofNullable(request.getIsVisible()).orElse(true));
         Integer sortOrder = request.getSortOrder();
         if (sortOrder == null) {
@@ -141,6 +144,12 @@ public class SongService {
 
         song.setCategory(category);
         song.setTitle(valueOrDefault(request.getTitle(), song.getTitle()));
+        if (request.getAuthor() != null) {
+            song.setAuthor(request.getAuthor());
+        }
+        if (request.getReleaseYear() != null) {
+            song.setReleaseYear(request.getReleaseYear());
+        }
         song.setLyric(valueOrDefault(request.getLyric(), song.getLyric()));
         song.setAudioMedia(audioMedia);
         song.setAudioUrl(audioUrl);
@@ -173,6 +182,16 @@ public class SongService {
         Song saved = songRepository.save(song);
         String phrase = isVisible ? "hiển thị ca khúc “" + saved.getTitle() + "”" : "ẩn ca khúc “" + saved.getTitle() + "”";
         auditTrailService.record(actorPhone, "UPDATE", "SONG", saved.getTitle(), phrase);
+        return saved;
+    }
+
+    @Transactional
+    public Song incrementListenCount(Long id, String actorPhone) {
+        Song song = getVisibleById(id);
+        int currentListenCount = song.getListenCount() != null ? song.getListenCount() : 0;
+        song.setListenCount(currentListenCount + 1);
+        Song saved = songRepository.save(song);
+        auditTrailService.record(actorPhone, "LISTEN", "SONG", saved.getTitle(), "song_id=" + saved.getId());
         return saved;
     }
 

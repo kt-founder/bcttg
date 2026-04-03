@@ -9,10 +9,13 @@ public class SongResponse {
     private final Long id;
     private final Long categoryId;
     private final String title;
+    private final String author;
+    private final Integer releaseYear;
     private final String lyric;
     private final MediaResponse audioMedia;
     private final String audioUrl;
     private final Integer durationSec;
+    private final Integer listenCount;
     private final Boolean isVisible;
     private final Integer sortOrder;
     private final Instant createdAt;
@@ -22,10 +25,13 @@ public class SongResponse {
         this.id = song.getId();
         this.categoryId = song.getCategory() != null ? song.getCategory().getId() : null;
         this.title = song.getTitle();
+        this.author = song.getAuthor();
+        this.releaseYear = song.getReleaseYear();
         this.lyric = song.getLyric();
         this.audioMedia = song.getAudioMedia() != null ? new MediaResponse(song.getAudioMedia()) : null;
         this.audioUrl = song.getAudioUrl();
         this.durationSec = song.getDurationSec();
+        this.listenCount = song.getListenCount() != null ? song.getListenCount() : 0;
         this.isVisible = song.getIsVisible();
         this.sortOrder = song.getSortOrder();
         this.createdAt = song.getCreatedAt();
@@ -44,6 +50,14 @@ public class SongResponse {
         return title;
     }
 
+    public String getAuthor() {
+        return author;
+    }
+
+    public Integer getReleaseYear() {
+        return releaseYear;
+    }
+
     public String getLyric() {
         return lyric;
     }
@@ -58,6 +72,10 @@ public class SongResponse {
 
     public Integer getDurationSec() {
         return durationSec;
+    }
+
+    public Integer getListenCount() {
+        return listenCount;
     }
 
     public Boolean getIsVisible() {
