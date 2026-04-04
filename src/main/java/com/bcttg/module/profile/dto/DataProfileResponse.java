@@ -6,12 +6,17 @@ import java.time.LocalDate;
 import com.bcttg.module.media.dto.MediaResponse;
 import com.bcttg.module.profile.entity.DataProfile;
 import com.bcttg.module.profile.entity.ProfileType;
+import com.bcttg.module.profile.util.TenureAtPositionFormatter;
 
 public class DataProfileResponse {
     private final Long id;
     private final ProfileType profileType;
     private final String fullName;
     private final String position;
+    private final LocalDate tenureFromDate;
+    private final LocalDate tenureToDate;
+    private final String tenureAtPositionFormat;
+    private final String tenureAtPosition;
     private final String unitName;
     private final String rankName;
     private final String heroTitle;
@@ -33,6 +38,14 @@ public class DataProfileResponse {
         this.profileType = profile.getProfileType();
         this.fullName = profile.getFullName();
         this.position = profile.getPosition();
+        this.tenureFromDate = profile.getTenureFromDate();
+        this.tenureToDate = profile.getTenureToDate();
+        this.tenureAtPositionFormat = profile.getTenureAtPositionFormat();
+        this.tenureAtPosition = TenureAtPositionFormatter.format(
+            profile.getTenureFromDate(),
+            profile.getTenureToDate(),
+            profile.getTenureAtPositionFormat()
+        );
         this.unitName = profile.getUnitName();
         this.rankName = profile.getRankName();
         this.heroTitle = profile.getHeroTitle();
@@ -64,6 +77,22 @@ public class DataProfileResponse {
 
     public String getPosition() {
         return position;
+    }
+
+    public LocalDate getTenureFromDate() {
+        return tenureFromDate;
+    }
+
+    public LocalDate getTenureToDate() {
+        return tenureToDate;
+    }
+
+    public String getTenureAtPositionFormat() {
+        return tenureAtPositionFormat;
+    }
+
+    public String getTenureAtPosition() {
+        return tenureAtPosition;
     }
 
     public String getUnitName() {

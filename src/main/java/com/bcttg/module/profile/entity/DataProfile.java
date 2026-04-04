@@ -30,6 +30,13 @@ public class DataProfile extends BaseEntity {
     @Column(length = 120)
     private String position;
 
+    private LocalDate tenureFromDate;
+
+    private LocalDate tenureToDate;
+
+    @Column(length = 200)
+    private String tenureAtPositionFormat;
+
     @Column(length = 150)
     private String unitName;
 
@@ -91,6 +98,30 @@ public class DataProfile extends BaseEntity {
 
     public void setPosition(String position) {
         this.position = position;
+    }
+
+    public LocalDate getTenureFromDate() {
+        return tenureFromDate;
+    }
+
+    public void setTenureFromDate(LocalDate tenureFromDate) {
+        this.tenureFromDate = tenureFromDate;
+    }
+
+    public LocalDate getTenureToDate() {
+        return tenureToDate;
+    }
+
+    public void setTenureToDate(LocalDate tenureToDate) {
+        this.tenureToDate = tenureToDate;
+    }
+
+    public String getTenureAtPositionFormat() {
+        return tenureAtPositionFormat;
+    }
+
+    public void setTenureAtPositionFormat(String tenureAtPositionFormat) {
+        this.tenureAtPositionFormat = tenureAtPositionFormat;
     }
 
     public String getUnitName() {

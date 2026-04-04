@@ -15,6 +15,7 @@ import com.bcttg.module.profile.dto.UpdateDataProfileRequest;
 import com.bcttg.module.profile.entity.DataProfile;
 import com.bcttg.module.profile.entity.ProfileType;
 import com.bcttg.module.profile.repository.DataProfileRepository;
+import com.bcttg.module.profile.util.TenureAtPositionFormatter;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -91,7 +92,7 @@ public class DataProfileService {
 
         DataProfile profile = new DataProfile();
         applyCreateOrUpdate(profile, request.getProfileType(), request.getFullName(), request.getPosition(),
-            request.getUnitName(), request.getRankName(), request.getHeroTitle(), request.getContactPhone(),
+            request.getTenureFromDate(), request.getTenureToDate(), request.getTenureAtPositionFormat(), request.getUnitName(), request.getRankName(), request.getHeroTitle(), request.getContactPhone(),
             request.getBirthDate(), request.getHometown(), request.getSummary(), request.getBiography(),
             request.getAchievements(), avatarMedia);
         profile.setIsVisible(Optional.ofNullable(request.getIsVisible()).orElse(true));
@@ -117,7 +118,9 @@ public class DataProfileService {
         }
 
         applyCreateOrUpdate(profile, valueOrDefault(request.getProfileType(), profile.getProfileType()), valueOrDefault(request.getFullName(), profile.getFullName()),
-            valueOrDefault(request.getPosition(), profile.getPosition()), valueOrDefault(request.getUnitName(), profile.getUnitName()),
+            valueOrDefault(request.getPosition(), profile.getPosition()), valueOrDefault(request.getTenureFromDate(), profile.getTenureFromDate()),
+            valueOrDefault(request.getTenureToDate(), profile.getTenureToDate()), valueOrDefault(request.getTenureAtPositionFormat(), profile.getTenureAtPositionFormat()),
+            valueOrDefault(request.getUnitName(), profile.getUnitName()),
             valueOrDefault(request.getRankName(), profile.getRankName()), valueOrDefault(request.getHeroTitle(), profile.getHeroTitle()),
             valueOrDefault(request.getContactPhone(), profile.getContactPhone()), valueOrDefault(request.getBirthDate(), profile.getBirthDate()),
             valueOrDefault(request.getHometown(), profile.getHometown()), valueOrDefault(request.getSummary(), profile.getSummary()),
@@ -188,6 +191,9 @@ public class DataProfileService {
         ProfileType profileType,
         String fullName,
         String position,
+        java.time.LocalDate tenureFromDate,
+        java.time.LocalDate tenureToDate,
+        String tenureAtPositionFormat,
         String unitName,
         String rankName,
         String heroTitle,
@@ -199,9 +205,19 @@ public class DataProfileService {
         String achievements,
         MediaAsset avatarMedia
     ) {
+        TenureAtPositionFormatter.validate(profileType, tenureFromDate, tenureToDate, tenureAtPositionFormat);
         profile.setProfileType(profileType);
         profile.setFullName(fullName);
         profile.setPosition(position);
+        if (profileType == ProfileType.THU_TRUONG) {
+            profile.setTenureFromDate(tenureFromDate);
+            profile.setTenureToDate(tenureToDate);
+            profile.setTenureAtPositionFormat(tenureAtPositionFormat);
+        } else {
+            profile.setTenureFromDate(null);
+            profile.setTenureToDate(null);
+            profile.setTenureAtPositionFormat(null);
+        }
         profile.setUnitName(unitName);
         profile.setRankName(rankName);
         profile.setHeroTitle(heroTitle);

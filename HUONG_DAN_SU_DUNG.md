@@ -148,6 +148,7 @@ Thu muc migration:
 - `src/main/resources/db/migration/V10__settings_home_modules_seed.sql`
 - `src/main/resources/db/migration/V11__history_diagram_content.sql`
 - `src/main/resources/db/migration/V12__song_metadata.sql`
+- `src/main/resources/db/migration/V13__profile_tenure.sql`
 
 Nguyen tac lam viec voi migration:
 1. Khong sua file migration da chay tren moi truong dung.
@@ -704,6 +705,9 @@ Neu tat category, he thong se tat hien thi cac muc con lien quan theo rule servi
   "profileType": "THU_TRUONG",
   "fullName": "Nguyen Van A",
   "position": "Chi huy truong",
+  "tenureFromDate": "2023-01-01",
+  "tenureToDate": "2026-04-04",
+  "tenureAtPositionFormat": "Tu {from} den {to}",
   "unitName": "Bo chi huy trung doan",
   "rankName": "Thieu tuong",
   "heroTitle": null,
@@ -722,6 +726,30 @@ Neu tat category, he thong se tat hien thi cac muc con lien quan theo rule servi
 Rule:
 - `profileType` bat buoc thuoc 1 trong 3 gia tri: `THU_TRUONG`, `CHIEN_SI`, `ANH_HUNG`.
 - Neu khong truyen `sortOrder`, he thong tu gan max+1 theo `profileType`.
+- Neu `profileType = THU_TRUONG` thi bat buoc gui du:
+  - `tenureFromDate`
+  - `tenureToDate`
+  - `tenureAtPositionFormat`
+- `tenureToDate` phai lon hon hoac bang `tenureFromDate`.
+- `tenureFromDate` va `tenureToDate` khong duoc lon hon ngay hien tai.
+- `tenureAtPositionFormat` phai chua du bien `{from}` va `{to}`.
+- FE se nhan them truong da format san:
+  - `tenureAtPosition`
+
+Vi du response:
+
+```json
+{
+  "id": 1,
+  "profileType": "THU_TRUONG",
+  "fullName": "Nguyen Van A",
+  "position": "Chi huy truong",
+  "tenureFromDate": "2023-01-01",
+  "tenureToDate": "2026-04-04",
+  "tenureAtPositionFormat": "Tu {from} den {to}",
+  "tenureAtPosition": "Tu 01/01/2023 den 04/04/2026"
+}
+```
 
 ### 11.7 Reorder data profile
 

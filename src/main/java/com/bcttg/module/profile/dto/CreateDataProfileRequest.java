@@ -16,6 +16,9 @@ public class CreateDataProfileRequest {
     private String fullName;
 
     private String position;
+    private LocalDate tenureFromDate;
+    private LocalDate tenureToDate;
+    private String tenureAtPositionFormat;
     private String unitName;
     private String rankName;
     private String heroTitle;
@@ -53,6 +56,30 @@ public class CreateDataProfileRequest {
 
     public void setPosition(String position) {
         this.position = position;
+    }
+
+    public LocalDate getTenureFromDate() {
+        return tenureFromDate;
+    }
+
+    public void setTenureFromDate(LocalDate tenureFromDate) {
+        this.tenureFromDate = tenureFromDate;
+    }
+
+    public LocalDate getTenureToDate() {
+        return tenureToDate;
+    }
+
+    public void setTenureToDate(LocalDate tenureToDate) {
+        this.tenureToDate = tenureToDate;
+    }
+
+    public String getTenureAtPositionFormat() {
+        return tenureAtPositionFormat;
+    }
+
+    public void setTenureAtPositionFormat(String tenureAtPositionFormat) {
+        this.tenureAtPositionFormat = tenureAtPositionFormat;
     }
 
     public String getUnitName() {
