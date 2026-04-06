@@ -1,4 +1,4 @@
-# Huong Dan Su Dung BCTTG API
+﻿# Huong Dan Su Dung BCTTG API
 
 Tai lieu nay huong dan van hanh, su dung va khai thac API BCTTG theo cach thuc te de ban co the:
 - chay he thong nhanh bang Docker Compose,
@@ -149,6 +149,7 @@ Thu muc migration:
 - `src/main/resources/db/migration/V11__history_diagram_content.sql`
 - `src/main/resources/db/migration/V12__song_metadata.sql`
 - `src/main/resources/db/migration/V13__profile_tenure.sql`
+- `src/main/resources/db/migration/V14__home_module_guest.sql`
 
 Nguyen tac lam viec voi migration:
 1. Khong sua file migration da chay tren moi truong dung.
@@ -531,7 +532,7 @@ Khuyen nghi cho FE:
 
 | Method | Path | Auth | Mo ta |
 |---|---|---|---|
-| GET | `/api/v1/public/home-modules` | Bearer (ADMIN/MANAGER/USER) | Danh sach module trang chu dang bat, da sap xep |
+| GET | `/api/v1/public/home-modules` | Bearer (ADMIN/MANAGER/USER) | Danh sach module trang chu dang bat, da sap xep, tra them `isGuest` |
 
 ## 9.16 Admin - Settings
 
@@ -552,8 +553,8 @@ Khuyen nghi cho FE:
 
 | Method | Path | Role | Mo ta |
 |---|---|---|---|
-| GET | `/api/v1/admin/home-modules` | ADMIN/MANAGER | Danh sach cau hinh module trang chu cho admin |
-| PATCH / PUT | `/api/v1/admin/home-modules` | ADMIN | Cap nhat full danh sach module trang chu sau khi reorder/edit/toggle |
+| GET | `/api/v1/admin/home-modules` | ADMIN/MANAGER | Danh sach cau hinh module trang chu cho admin, tra them `isGuest` |
+| PATCH / PUT | `/api/v1/admin/home-modules` | ADMIN | Cap nhat full danh sach module trang chu sau khi reorder/edit/toggle, co ca `enabled` va `isGuest` |
 
 ## 9.18 Admin - Logs
 
@@ -706,7 +707,7 @@ Neu tat category, he thong se tat hien thi cac muc con lien quan theo rule servi
   "fullName": "Nguyen Van A",
   "position": "Chi huy truong",
   "tenureFromDate": "2023-01-01",
-  "tenureToDate": "2026-04-04",
+  "tenureToDate": "2026-04-06",
   "tenureAtPositionFormat": "Tu {from} den {to}",
   "unitName": "Bo chi huy trung doan",
   "rankName": "Thieu tuong",
@@ -732,6 +733,7 @@ Rule:
   - `tenureAtPositionFormat`
 - `tenureToDate` phai lon hon hoac bang `tenureFromDate`.
 - `tenureFromDate` va `tenureToDate` khong duoc lon hon ngay hien tai.
+- Neu `tenureToDate` bang ngay hien tai thi `tenureAtPosition` se tu format phan `{to}` thanh `hiện tại`.
 - `tenureAtPositionFormat` phai chua du bien `{from}` va `{to}`.
 - FE se nhan them truong da format san:
   - `tenureAtPosition`
@@ -745,13 +747,33 @@ Vi du response:
   "fullName": "Nguyen Van A",
   "position": "Chi huy truong",
   "tenureFromDate": "2023-01-01",
-  "tenureToDate": "2026-04-04",
+  "tenureToDate": "2026-04-06",
   "tenureAtPositionFormat": "Tu {from} den {to}",
-  "tenureAtPosition": "Tu 01/01/2023 den 04/04/2026"
+  "tenureAtPosition": "Tu 01/01/2023 den hien tai"
 }
 ```
 
-### 11.7 Reorder data profile
+### 11.7 Response home module
+
+```json
+{
+  "id": "tin-tuc",
+  "name": "Cac dong chi dang, nha nuoc tham va lam viec bcttg",
+  "description": "Cac dong chi dang, nha nuoc tham va lam viec BCTTG",
+  "enabled": false,
+  "isGuest": true,
+  "sortOrder": 7,
+  "itemCount": 0,
+  "updatedAt": "2026-04-06T08:00:00Z"
+}
+```
+
+Rule:
+- `enabled`: module co hien tren trang chu cua he thong hay khong.
+- `isGuest`: module co duoc phep hien cho luong guest/o che do khach hay khong.
+- FE can luu y day la field cau hinh, backend hien tai chi tra ve gia tri de FE tu quyet dinh render.
+
+### 11.8 Reorder data profile
 
 ```json
 {
@@ -766,7 +788,7 @@ Vi du response:
 Rule:
 - Tat ca `id` trong `orders` phai cung `profileType`.
 
-### 11.8 Tao personal note
+### 11.9 Tao personal note
 
 ```json
 {
@@ -778,7 +800,7 @@ Rule:
 }
 ```
 
-### 11.9 Patch pin/archive personal note
+### 11.10 Patch pin/archive personal note
 
 ```json
 {
@@ -786,7 +808,7 @@ Rule:
 }
 ```
 
-### 11.10 Mau response dashboard overview (rut gon)
+### 11.11 Mau response dashboard overview (rut gon)
 
 ```json
 {
@@ -827,7 +849,7 @@ Rule dashboard overview:
 - `summary.viewsToday` la so luot xem phat sinh trong ngay hien tai.
 - `weeklyVisits` la so luot dang nhap thanh cong theo tung ngay trong 7 ngay gan nhat, lay tu `system_audit_logs`.
 
-### 11.11 Tao user (admin)
+### 11.12 Tao user (admin)
 
 ```json
 {
@@ -852,7 +874,7 @@ Rule:
 - `password`: toi thieu 8 ky tu, phai co chu hoa + chu thuong + so.
 - `profile.fullName` bat buoc.
 
-### 11.12 Khoa/mo khoa user
+### 11.13 Khoa/mo khoa user
 
 ```json
 {
@@ -860,7 +882,7 @@ Rule:
 }
 ```
 
-### 11.13 Doi role user
+### 11.14 Doi role user
 
 ```json
 {
@@ -868,7 +890,7 @@ Rule:
 }
 ```
 
-### 11.14 Cap lai mat khau user
+### 11.15 Cap lai mat khau user
 
 ```json
 {
@@ -879,7 +901,7 @@ Rule:
 Rule:
 - Password moi cung dung policy nhu luc tao tai khoan.
 
-### 11.14.1 Response `GET /api/v1/user/me`
+### 11.15.1 Response `GET /api/v1/user/me`
 
 ```json
 {
@@ -907,7 +929,7 @@ Rule:
 }
 ```
 
-### 11.15 Vi du so do lich su dung chung module content
+### 11.16 Vi du so do lich su dung chung module content
 
 Tao category root cho so do lich su:
 
@@ -942,7 +964,7 @@ Luu y:
 - Tim kiem, loc, sap xep va CRUD cua "So do lich su" dung chung endpoint content.
 - Khong co bang rieng va khong co controller rieng cho module nay.
 
-### 11.16 PATCH settings (admin)
+### 11.17 PATCH settings (admin)
 
 ```json
 {
@@ -958,7 +980,7 @@ Luu y:
 - `smtpPass` khong tra plaintext; response chi tra trang thai da cau hinh va gia tri masked.
 - Neu FE dang goi `PUT`, co the gui cung payload nay.
 
-### 11.17 PATCH home modules (admin)
+### 11.18 PATCH home modules (admin)
 
 ```json
 {
@@ -986,7 +1008,7 @@ Luu y:
 - `itemCount` la field read-only, backend tu tinh tu du lieu thuc te.
 - Neu FE dang goi `PUT`, co the gui cung payload nay.
 
-### 11.18 Response status settings (admin)
+### 11.19 Response status settings (admin)
 
 ```json
 [
@@ -1027,7 +1049,7 @@ Luu y:
 - `value` la chuoi da format san de FE hien card nhanh.
 - `state` de map mau sac/trang thai UI: `healthy`, `warning`, `error`, `unknown`.
 
-### 11.19 Request test email (admin)
+### 11.20 Request test email (admin)
 
 ```json
 {
@@ -1047,7 +1069,7 @@ Response thanh cong:
 }
 ```
 
-### 11.20 Response backups (admin)
+### 11.21 Response backups (admin)
 
 ```json
 [
@@ -1065,7 +1087,7 @@ Luu y:
 - `id` la backup id da encode, FE dung lai cho `download` va `restore`.
 - Endpoint `download` va cac endpoint export tra file binary, khong tra `ApiResponse`.
 
-### 11.21 Response logs summary
+### 11.22 Response logs summary
 
 ```json
 {
@@ -1076,7 +1098,7 @@ Luu y:
 }
 ```
 
-### 11.22 Response login log row
+### 11.23 Response login log row
 
 ```json
 {
@@ -1093,7 +1115,7 @@ Luu y:
 }
 ```
 
-### 11.23 Response system log row
+### 11.24 Response system log row
 
 ```json
 {
@@ -1109,7 +1131,7 @@ Luu y:
 }
 ```
 
-### 11.24 Response reports overview
+### 11.25 Response reports overview
 
 ```json
 {
@@ -1297,7 +1319,7 @@ curl -i -X PATCH http://localhost:8080/api/v1/admin/settings \
 curl -i -X PATCH http://localhost:8080/api/v1/admin/home-modules \
   -H "Authorization: Bearer <TOKEN>" \
   -H "Content-Type: application/json" \
-  -d "{\"modules\":[{\"id\":\"banner\",\"name\":\"Banner Chinh\",\"description\":\"Hinh anh banner xoay vong tren dau trang chu\",\"enabled\":true,\"sortOrder\":1},{\"id\":\"truyen-thong\",\"name\":\"Truyen thong\",\"description\":\"Noi dung noi bat\",\"enabled\":true,\"sortOrder\":2},{\"id\":\"net-tieu-bieu\",\"name\":\"Net tieu bieu\",\"description\":\"Guong dien hinh tieu bieu\",\"enabled\":true,\"sortOrder\":3},{\"id\":\"thu-truong\",\"name\":\"Thu truong\",\"description\":\"Ho so thu truong\",\"enabled\":true,\"sortOrder\":4},{\"id\":\"anh-hung\",\"name\":\"Anh hung\",\"description\":\"Ho so anh hung\",\"enabled\":true,\"sortOrder\":5},{\"id\":\"ca-khuc\",\"name\":\"Ca khuc\",\"description\":\"Thu vien bai hat\",\"enabled\":true,\"sortOrder\":6},{\"id\":\"tin-tuc\",\"name\":\"Tin tuc\",\"description\":\"Cac ban tin tong hop\",\"enabled\":false,\"sortOrder\":7}]}"
+  -d "{\"modules\":[{\"id\":\"banner\",\"name\":\"Banner Chinh\",\"description\":\"Hinh anh banner xoay vong tren dau trang chu\",\"enabled\":true,\"isGuest\":true,\"sortOrder\":1},{\"id\":\"truyen-thong\",\"name\":\"Truyen thong\",\"description\":\"Noi dung noi bat\",\"enabled\":true,\"isGuest\":true,\"sortOrder\":2},{\"id\":\"net-tieu-bieu\",\"name\":\"Net tieu bieu\",\"description\":\"Guong dien hinh tieu bieu\",\"enabled\":true,\"isGuest\":true,\"sortOrder\":3},{\"id\":\"thu-truong\",\"name\":\"Thu truong\",\"description\":\"Ho so thu truong\",\"enabled\":true,\"isGuest\":true,\"sortOrder\":4},{\"id\":\"anh-hung\",\"name\":\"Anh hung\",\"description\":\"Ho so anh hung\",\"enabled\":true,\"isGuest\":true,\"sortOrder\":5},{\"id\":\"ca-khuc\",\"name\":\"Ca khuc\",\"description\":\"Thu vien bai hat\",\"enabled\":true,\"isGuest\":true,\"sortOrder\":6},{\"id\":\"tin-tuc\",\"name\":\"Cac dong chi dang, nha nuoc tham va lam viec bcttg\",\"description\":\"Cac dong chi dang, nha nuoc tham va lam viec BCTTG\",\"enabled\":false,\"isGuest\":true,\"sortOrder\":7}]}"
 ```
 
 ### 14.13 Lay logs summary
@@ -1719,6 +1741,7 @@ Ngay cap nhat: `2026-03-07`
   "name": "Banner Chinh",
   "description": "Hinh anh banner xoay vong tren dau trang chu",
   "enabled": true,
+  "isGuest": true,
   "sortOrder": 1,
   "itemCount": 5,
   "updatedAt": "2026-03-07T07:00:00Z"
@@ -1737,7 +1760,7 @@ Ngay cap nhat: `2026-03-07`
 
 #### Cong viec back-end
 
-1. Tao bang `home_modules` gom `id`, `name`, `description`, `enabled`, `sort_order`, `updated_at`, `updated_by`.
+1. Tao bang `home_modules` gom `id`, `name`, `description`, `enabled`, `is_guest`, `sort_order`, `updated_at`, `updated_by`.
 2. Seed du lieu ban dau cho cac module co san:
    - `banner`
    - `truyen-thong`
@@ -1745,7 +1768,7 @@ Ngay cap nhat: `2026-03-07`
    - `thu-truong`
    - `anh-hung`
    - `ca-khuc`
-   - `tin-tuc`
+   - `tin-tuc` (display name: `Cac dong chi dang, nha nuoc tham va lam viec bcttg`)
 3. Tinh `itemCount` tu bang noi dung/ho so/ca khuc lien quan, khong luu tay neu khong bat buoc.
 4. Validate khong trung `sort_order`, khong mat module khi save full list.
 5. Ghi audit log khi reorder, bat/tat, sua thong tin module.
@@ -1981,3 +2004,4 @@ Neu ban muon, toi co the viet them:
 - bo tai lieu rieng cho Frontend (map endpoint + payload theo man hinh),
 - bo Postman Collection,
 - checklist release (dev -> staging -> production) theo quy trinh CI/CD.
+

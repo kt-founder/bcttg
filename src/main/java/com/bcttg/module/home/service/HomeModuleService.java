@@ -76,6 +76,7 @@ public class HomeModuleService {
             module.setName(item.getName().trim());
             module.setDescription(item.getDescription());
             module.setEnabled(item.getEnabled());
+            module.setIsGuest(item.getIsGuest());
             module.setSortOrder(item.getSortOrder());
             module.setUpdatedBy(actorPhone);
         }
@@ -119,6 +120,7 @@ public class HomeModuleService {
             module.getName(),
             module.getDescription(),
             module.getEnabled(),
+            module.getIsGuest(),
             module.getSortOrder(),
             resolveItemCount(module.getId()),
             module.getUpdatedAt()

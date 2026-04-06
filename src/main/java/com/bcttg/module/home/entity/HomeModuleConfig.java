@@ -27,6 +27,9 @@ public class HomeModuleConfig {
     private Boolean enabled;
 
     @Column(nullable = false)
+    private Boolean isGuest;
+
+    @Column(nullable = false)
     private Integer sortOrder;
 
     @Column(length = 150)
@@ -70,6 +73,14 @@ public class HomeModuleConfig {
 
     public void setEnabled(Boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public Boolean getIsGuest() {
+        return isGuest;
+    }
+
+    public void setIsGuest(Boolean isGuest) {
+        this.isGuest = isGuest;
     }
 
     public Integer getSortOrder() {

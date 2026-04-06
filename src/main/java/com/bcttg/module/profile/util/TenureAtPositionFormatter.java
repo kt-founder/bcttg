@@ -49,8 +49,11 @@ public final class TenureAtPositionFormatter {
         if (tenureFromDate == null || tenureToDate == null || tenureAtPositionFormat == null || tenureAtPositionFormat.isBlank()) {
             return null;
         }
+        String toValue = tenureToDate.equals(LocalDate.now())
+            ? "hiện tại"
+            : tenureToDate.format(DISPLAY_DATE_FORMAT);
         return tenureAtPositionFormat
             .replace("{from}", tenureFromDate.format(DISPLAY_DATE_FORMAT))
-            .replace("{to}", tenureToDate.format(DISPLAY_DATE_FORMAT));
+            .replace("{to}", toValue);
     }
 }

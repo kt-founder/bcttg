@@ -21,6 +21,9 @@ public class UpdateHomeModuleItemRequest {
     private Boolean enabled;
 
     @NotNull
+    private Boolean isGuest;
+
+    @NotNull
     @Min(0)
     private Integer sortOrder;
 
@@ -54,6 +57,14 @@ public class UpdateHomeModuleItemRequest {
 
     public void setEnabled(Boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public Boolean getIsGuest() {
+        return isGuest;
+    }
+
+    public void setIsGuest(Boolean isGuest) {
+        this.isGuest = isGuest;
     }
 
     public Integer getSortOrder() {
