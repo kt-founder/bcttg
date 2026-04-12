@@ -3,10 +3,12 @@ package com.bcttg.module.profile.service;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 
 import com.bcttg.common.ApiException;
 import com.bcttg.common.ErrorCode;
 import com.bcttg.module.dashboard.service.SystemAuditTrailService;
+import com.bcttg.module.home.service.PublicModuleAccessService;
 import com.bcttg.module.media.entity.MediaAsset;
 import com.bcttg.module.media.repository.MediaAssetRepository;
 import com.bcttg.module.profile.dto.CreateDataProfileRequest;
@@ -21,6 +23,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,15 +32,18 @@ public class DataProfileService {
     private final DataProfileRepository repository;
     private final MediaAssetRepository mediaRepository;
     private final SystemAuditTrailService auditTrailService;
+    private final PublicModuleAccessService publicModuleAccessService;
 
     public DataProfileService(
         DataProfileRepository repository,
         MediaAssetRepository mediaRepository,
-        SystemAuditTrailService auditTrailService
+        SystemAuditTrailService auditTrailService,
+        PublicModuleAccessService publicModuleAccessService
     ) {
         this.repository = repository;
         this.mediaRepository = mediaRepository;
         this.auditTrailService = auditTrailService;
+        this.publicModuleAccessService = publicModuleAccessService;
     }
 
     public Page<DataProfile> findAll(ProfileType profileType, String q, Boolean isVisible, Pageable pageable) {
@@ -61,8 +67,21 @@ public class DataProfileService {
         return repository.findAll(spec, pageable);
     }
 
-    public Page<DataProfile> findAllPublic(ProfileType profileType, String q, Pageable pageable) {
-        return findAll(profileType, q, true, pageable);
+    public Page<DataProfile> findAllPublic(ProfileType profileType, String q, Pageable pageable, Authentication authentication) {
+        if (publicModuleAccessService.isAuthenticated(authentication)) {
+            return findAll(profileType, q, true, pageable);
+        }
+        if (profileType != null) {
+            publicModuleAccessService.ensureProfileAccess(authentication, profileType);
+            return findAll(profileType, q, true, pageable);
+        }
+        Set<ProfileType> guestTypes = publicModuleAccessService.getGuestProfileTypes();
+        if (guestTypes.isEmpty()) {
+            return Page.empty(pageable);
+        }
+        Specification<DataProfile> spec = buildSpecification(profileType, q, true)
+            .and((root, query, cb) -> root.get("profileType").in(guestTypes));
+        return repository.findAll(spec, pageable);
     }
 
     public DataProfile getById(Long id) {
@@ -80,6 +99,33 @@ public class DataProfileService {
             throw new ApiException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "Data profile not found");
         }
         return profile;
+    }
+
+    public DataProfile getVisibleById(Long id, Authentication authentication) {
+        DataProfile profile = getVisibleById(id);
+        publicModuleAccessService.ensureProfileAccess(authentication, profile.getProfileType());
+        return profile;
+    }
+
+    private Specification<DataProfile> buildSpecification(ProfileType profileType, String q, Boolean isVisible) {
+        Specification<DataProfile> spec = Specification.<DataProfile>where(
+            (root, query, cb) -> cb.isNull(root.get("deletedAt"))
+        );
+        if (profileType != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("profileType"), profileType));
+        }
+        if (q != null && !q.isBlank()) {
+            String like = "%" + q.toLowerCase(Locale.ROOT) + "%";
+            spec = spec.and((root, query, cb) -> cb.or(
+                cb.like(cb.lower(root.get("fullName")), like),
+                cb.like(cb.lower(root.get("position")), like),
+                cb.like(cb.lower(root.get("unitName")), like)
+            ));
+        }
+        if (isVisible != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("isVisible"), isVisible));
+        }
+        return spec;
     }
 
     @Transactional

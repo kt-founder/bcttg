@@ -13,7 +13,7 @@ import com.bcttg.module.profile.service.DataProfileService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,24 +33,23 @@ public class PublicDataProfileController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','USER')")
     public ApiResponse<List<DataProfileResponse>> list(
         @RequestParam(required = false) ProfileType profileType,
         @RequestParam(required = false) String q,
         @RequestParam(required = false) Integer page,
         @RequestParam(required = false, name = "page_size") Integer pageSize,
         @RequestParam(required = false) String sort,
-        @RequestParam(required = false) String order
+        @RequestParam(required = false) String order,
+        Authentication authentication
     ) {
         Pageable pageable = PageRequestUtil.build(page, pageSize, sort, order, Sort.by("sortOrder").ascending());
-        Page<DataProfile> result = service.findAllPublic(profileType, q, pageable);
+        Page<DataProfile> result = service.findAllPublic(profileType, q, pageable, authentication);
         List<DataProfileResponse> data = result.map(DataProfileResponse::new).toList();
         return ApiResponse.success(data, PageMeta.from(result));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','USER')")
-    public ApiResponse<DataProfileResponse> get(@PathVariable Long id) {
-        return ApiResponse.success(new DataProfileResponse(service.getVisibleById(id)));
+    public ApiResponse<DataProfileResponse> get(@PathVariable Long id, Authentication authentication) {
+        return ApiResponse.success(new DataProfileResponse(service.getVisibleById(id, authentication)));
     }
 }

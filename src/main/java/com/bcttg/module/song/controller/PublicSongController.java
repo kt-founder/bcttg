@@ -12,7 +12,6 @@ import com.bcttg.module.song.service.SongService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,25 +32,24 @@ public class PublicSongController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','USER')")
     public ApiResponse<List<SongResponse>> list(
         @RequestParam(required = false, name = "category_id") Long categoryId,
         @RequestParam(required = false) String q,
         @RequestParam(required = false) Integer page,
         @RequestParam(required = false, name = "page_size") Integer pageSize,
         @RequestParam(required = false) String sort,
-        @RequestParam(required = false) String order
+        @RequestParam(required = false) String order,
+        Authentication authentication
     ) {
         Pageable pageable = PageRequestUtil.build(page, pageSize, sort, order, Sort.by("sortOrder").ascending());
-        Page<Song> result = service.findAllPublic(categoryId, q, pageable);
+        Page<Song> result = service.findAllPublic(categoryId, q, pageable, authentication);
         List<SongResponse> data = result.map(SongResponse::new).toList();
         return ApiResponse.success(data, PageMeta.from(result));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','USER')")
     public ApiResponse<SongResponse> get(@PathVariable Long id, Authentication authentication) {
         String actorPhone = authentication != null ? authentication.getName() : null;
-        return ApiResponse.success(new SongResponse(service.incrementListenCount(id, actorPhone)));
+        return ApiResponse.success(new SongResponse(service.incrementListenCount(id, actorPhone, authentication)));
     }
 }

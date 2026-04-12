@@ -3,6 +3,7 @@ package com.bcttg.module.content.service;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 
 import com.bcttg.common.ApiException;
 import com.bcttg.common.ErrorCode;
@@ -14,11 +15,13 @@ import com.bcttg.module.content.entity.ContentType;
 import com.bcttg.module.content.repository.ContentCategoryRepository;
 import com.bcttg.module.content.repository.ContentItemRepository;
 import com.bcttg.module.dashboard.service.SystemAuditTrailService;
+import com.bcttg.module.home.service.PublicModuleAccessService;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,15 +30,18 @@ public class ContentCategoryService {
     private final ContentCategoryRepository categoryRepository;
     private final ContentItemRepository itemRepository;
     private final SystemAuditTrailService auditTrailService;
+    private final PublicModuleAccessService publicModuleAccessService;
 
     public ContentCategoryService(
         ContentCategoryRepository categoryRepository,
         ContentItemRepository itemRepository,
-        SystemAuditTrailService auditTrailService
+        SystemAuditTrailService auditTrailService,
+        PublicModuleAccessService publicModuleAccessService
     ) {
         this.categoryRepository = categoryRepository;
         this.itemRepository = itemRepository;
         this.auditTrailService = auditTrailService;
+        this.publicModuleAccessService = publicModuleAccessService;
     }
 
     public Page<ContentCategory> findAll(ContentType type, Long parentId, String q, Boolean isVisible, Pageable pageable) {
@@ -59,6 +65,57 @@ public class ContentCategoryService {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("isVisible"), isVisible));
         }
         return categoryRepository.findAll(spec, pageable);
+    }
+
+    public Page<ContentCategory> findAllPublic(ContentType type, Long parentId, String q, Pageable pageable, Authentication authentication) {
+        if (publicModuleAccessService.isAuthenticated(authentication)) {
+            return findAll(type, parentId, q, true, pageable);
+        }
+        if (parentId != null) {
+            ContentCategory parent = getVisibleById(parentId);
+            publicModuleAccessService.ensureContentAccess(authentication, parent.getType());
+            return findAll(type, parentId, q, true, pageable);
+        }
+        if (type != null) {
+            publicModuleAccessService.ensureContentAccess(authentication, type);
+            return findAll(type, parentId, q, true, pageable);
+        }
+        Set<ContentType> guestTypes = publicModuleAccessService.getGuestContentTypes();
+        if (guestTypes.isEmpty()) {
+            return Page.empty(pageable);
+        }
+        Specification<ContentCategory> spec = buildSpecification(null, parentId, q, true)
+            .and((root, query, cb) -> root.get("type").in(guestTypes));
+        return categoryRepository.findAll(spec, pageable);
+    }
+
+    public ContentCategory getVisibleById(Long id, Authentication authentication) {
+        ContentCategory category = getVisibleById(id);
+        publicModuleAccessService.ensureContentAccess(authentication, category.getType());
+        return category;
+    }
+
+    private Specification<ContentCategory> buildSpecification(ContentType type, Long parentId, String q, Boolean isVisible) {
+        Specification<ContentCategory> spec = Specification.<ContentCategory>where(
+            (root, query, cb) -> cb.isNull(root.get("deletedAt"))
+        );
+        if (type != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("type"), type));
+        }
+        if (parentId != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("parent").get("id"), parentId));
+        }
+        if (q != null && !q.isBlank()) {
+            String like = "%" + q.toLowerCase(Locale.ROOT) + "%";
+            spec = spec.and((root, query, cb) -> cb.or(
+                cb.like(cb.lower(root.get("name")), like),
+                cb.like(cb.lower(root.get("slug")), like)
+            ));
+        }
+        if (isVisible != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("isVisible"), isVisible));
+        }
+        return spec;
     }
 
     public Page<ContentCategory> findAllPublic(ContentType type, Long parentId, String q, Pageable pageable) {

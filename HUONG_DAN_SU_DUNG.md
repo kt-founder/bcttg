@@ -236,9 +236,11 @@ Authorization: Bearer <jwt_token>
 
 ### 7.4. Role thuc te
 - `ADMIN`, `MANAGER`, `USER`
-- Toan bo endpoint nghiep vu, ke ca namespace `/api/v1/public/**`, deu can Bearer token hop le.
+- Cac endpoint nghiep vu ngoai namespace `/api/v1/public/**` deu can Bearer token hop le.
 - Namespace `/api/v1/public/**`:
-  - `GET`: cho phep `ADMIN`, `MANAGER`, `USER`.
+  - Neu da dang nhap, `GET` cho phep `ADMIN`, `MANAGER`, `USER`.
+  - Neu chua dang nhap, chi duoc vao cac module co `isGuest = true`.
+  - `SO_DO_LICH_SU` hien chua map voi `home-module`, nen van can token.
 - Module `admin/content-*`, `admin/song-*`, `admin/data-profiles`, `admin/media`:
   - `GET` list/detail: `ADMIN`, `MANAGER`
   - `POST/PATCH/PUT/DELETE`: `ADMIN`, `MANAGER`
@@ -312,10 +314,10 @@ Luu y:
 
 | Method | Path | Auth | Mo ta |
 |---|---|---|---|
-| GET | `/api/v1/public/content-categories` | Bearer (ADMIN/MANAGER/USER) | Danh sach danh muc noi dung cong khai |
-| GET | `/api/v1/public/content-categories/{id}` | Bearer (ADMIN/MANAGER/USER) | Chi tiet danh muc cong khai |
-| GET | `/api/v1/public/content-items` | Bearer (ADMIN/MANAGER/USER) | Danh sach bai viet cong khai |
-| GET | `/api/v1/public/content-items/{id}` | Bearer (ADMIN/MANAGER/USER) | Chi tiet bai viet cong khai (tu tang view_count) |
+| GET | `/api/v1/public/content-categories` | Guest neu module `isGuest = true`, hoac Bearer (ADMIN/MANAGER/USER) | Danh sach danh muc noi dung cong khai |
+| GET | `/api/v1/public/content-categories/{id}` | Guest neu module `isGuest = true`, hoac Bearer (ADMIN/MANAGER/USER) | Chi tiet danh muc cong khai |
+| GET | `/api/v1/public/content-items` | Guest neu module `isGuest = true`, hoac Bearer (ADMIN/MANAGER/USER) | Danh sach bai viet cong khai |
+| GET | `/api/v1/public/content-items/{id}` | Guest neu module `isGuest = true`, hoac Bearer (ADMIN/MANAGER/USER) | Chi tiet bai viet cong khai (tu tang view_count) |
 
 ### 9.2.1 Luong category cho FE
 
@@ -410,17 +412,17 @@ Khuyen nghi cho FE:
 
 | Method | Path | Auth | Mo ta |
 |---|---|---|---|
-| GET | `/api/v1/public/song-categories` | Bearer (ADMIN/MANAGER/USER) | Danh sach danh muc bai hat cong khai |
-| GET | `/api/v1/public/song-categories/{id}` | Bearer (ADMIN/MANAGER/USER) | Chi tiet danh muc bai hat cong khai |
-| GET | `/api/v1/public/songs` | Bearer (ADMIN/MANAGER/USER) | Danh sach bai hat cong khai |
-| GET | `/api/v1/public/songs/{id}` | Bearer (ADMIN/MANAGER/USER) | Chi tiet bai hat cong khai, tu dong tang `listenCount` |
+| GET | `/api/v1/public/song-categories` | Guest neu module `ca-khuc` co `isGuest = true`, hoac Bearer (ADMIN/MANAGER/USER) | Danh sach danh muc bai hat cong khai |
+| GET | `/api/v1/public/song-categories/{id}` | Guest neu module `ca-khuc` co `isGuest = true`, hoac Bearer (ADMIN/MANAGER/USER) | Chi tiet danh muc bai hat cong khai |
+| GET | `/api/v1/public/songs` | Guest neu module `ca-khuc` co `isGuest = true`, hoac Bearer (ADMIN/MANAGER/USER) | Danh sach bai hat cong khai |
+| GET | `/api/v1/public/songs/{id}` | Guest neu module `ca-khuc` co `isGuest = true`, hoac Bearer (ADMIN/MANAGER/USER) | Chi tiet bai hat cong khai, tu dong tang `listenCount` |
 
 ## 9.4 Public - Data profile
 
 | Method | Path | Auth | Mo ta |
 |---|---|---|---|
-| GET | `/api/v1/public/data-profiles` | Bearer (ADMIN/MANAGER/USER) | Liet ke ho so du lieu dang hien thi |
-| GET | `/api/v1/public/data-profiles/{id}` | Bearer (ADMIN/MANAGER/USER) | Chi tiet ho so du lieu dang hien thi |
+| GET | `/api/v1/public/data-profiles` | Guest neu module tuong ung co `isGuest = true`, hoac Bearer (ADMIN/MANAGER/USER) | Liet ke ho so du lieu dang hien thi |
+| GET | `/api/v1/public/data-profiles/{id}` | Guest neu module tuong ung co `isGuest = true`, hoac Bearer (ADMIN/MANAGER/USER) | Chi tiet ho so du lieu dang hien thi |
 
 ## 9.5 Public - Media file
 
@@ -532,7 +534,7 @@ Khuyen nghi cho FE:
 
 | Method | Path | Auth | Mo ta |
 |---|---|---|---|
-| GET | `/api/v1/public/home-modules` | Bearer (ADMIN/MANAGER/USER) | Danh sach module trang chu dang bat, da sap xep, tra them `isGuest` |
+| GET | `/api/v1/public/home-modules` | Guest hoac Bearer (ADMIN/MANAGER/USER) | Danh sach module trang chu dang bat, da sap xep, tra them `isGuest`; neu khong co token thi chi tra module co `isGuest = true` |
 
 ## 9.16 Admin - Settings
 
@@ -771,6 +773,7 @@ Vi du response:
 Rule:
 - `enabled`: module co hien tren trang chu cua he thong hay khong.
 - `isGuest`: module co duoc phep hien cho luong guest/o che do khach hay khong.
+- Neu request khong gui token, backend chi cho phep vao cac endpoint public thuoc module co `isGuest = true`.
 - FE can luu y day la field cau hinh, backend hien tai chi tra ve gia tri de FE tu quyet dinh render.
 
 ### 11.8 Reorder data profile
@@ -1416,7 +1419,9 @@ curl -i -X POST http://localhost:8080/api/v1/admin/media \
 
 - Cac endpoint update quan trong hien ho tro ca `PATCH` va `PUT`, nhung FE moi nen uu tien `PATCH`.
 - Cac endpoint export/download (`/logs/export`, `/reports/export`, `/settings/backups/{id}/download`) tra `blob/file`, khong tra `ApiResponse`.
-- Namespace `/api/v1/public/**` van can `Authorization: Bearer <TOKEN>`.
+- Namespace `/api/v1/public/**` ho tro 2 che do:
+  - co token: vao duoc toan bo public endpoint nhu hien tai.
+  - khong co token: chi vao duoc module co `isGuest = true`.
 - `GET /api/v1/user/me` tra cung schema user nhu admin detail, nhung chi tra du lieu cua user dang dang nhap.
 - `GET /api/v1/public/content-items/{id}` tu dong tang view va tao audit log.
 - `GET /api/v1/admin/settings/status` tra `data` la mang card, FE khong can tu tinh toan lai cac gia tri server.
@@ -1756,7 +1761,8 @@ Ngay cap nhat: `2026-03-07`
   - Hien tai implementation cung ho tro `PUT` de tuong thich nguoc.
   - Nhan full list sau khi admin reorder/edit/toggle.
 - `GET /api/v1/public/home-modules`
-  - Hien tai backend dang yeu cau Bearer token cho namespace public nay.
+  - Khong can token.
+  - Neu khong co token, backend chi tra module `enabled = true` va `is_guest = true`.
 
 #### Cong viec back-end
 

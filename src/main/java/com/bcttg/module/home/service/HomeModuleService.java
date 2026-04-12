@@ -24,6 +24,7 @@ import com.bcttg.module.profile.repository.DataProfileRepository;
 import com.bcttg.module.song.repository.SongRepository;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,19 +35,22 @@ public class HomeModuleService {
     private final DataProfileRepository dataProfileRepository;
     private final SongRepository songRepository;
     private final SystemAuditTrailService auditTrailService;
+    private final PublicModuleAccessService publicModuleAccessService;
 
     public HomeModuleService(
         HomeModuleRepository repository,
         ContentItemRepository contentItemRepository,
         DataProfileRepository dataProfileRepository,
         SongRepository songRepository,
-        SystemAuditTrailService auditTrailService
+        SystemAuditTrailService auditTrailService,
+        PublicModuleAccessService publicModuleAccessService
     ) {
         this.repository = repository;
         this.contentItemRepository = contentItemRepository;
         this.dataProfileRepository = dataProfileRepository;
         this.songRepository = songRepository;
         this.auditTrailService = auditTrailService;
+        this.publicModuleAccessService = publicModuleAccessService;
     }
 
     @Transactional(readOnly = true)
@@ -57,8 +61,11 @@ public class HomeModuleService {
     }
 
     @Transactional(readOnly = true)
-    public List<HomeModuleResponse> getPublicModules() {
-        return repository.findAllByEnabledTrueOrderBySortOrderAscIdAsc().stream()
+    public List<HomeModuleResponse> getPublicModules(Authentication authentication) {
+        List<HomeModuleConfig> modules = publicModuleAccessService.isAuthenticated(authentication)
+            ? repository.findAllByEnabledTrueOrderBySortOrderAscIdAsc()
+            : repository.findAllByEnabledTrueAndIsGuestTrueOrderBySortOrderAscIdAsc();
+        return modules.stream()
             .map(this::toResponse)
             .toList();
     }

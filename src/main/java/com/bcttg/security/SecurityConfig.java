@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
@@ -63,6 +64,7 @@ public class SecurityConfig {
                 "/api-docs/**",
                 "/v3/api-docs/**"
             ).permitAll()
+            .requestMatchers(HttpMethod.GET, "/api/v1/public/**").permitAll()
             .anyRequest().authenticated()
         );
 

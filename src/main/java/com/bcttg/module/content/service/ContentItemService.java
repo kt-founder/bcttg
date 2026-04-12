@@ -3,6 +3,7 @@ package com.bcttg.module.content.service;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 
 import com.bcttg.common.ApiException;
 import com.bcttg.common.ErrorCode;
@@ -15,6 +16,7 @@ import com.bcttg.module.content.entity.ContentType;
 import com.bcttg.module.content.repository.ContentCategoryRepository;
 import com.bcttg.module.content.repository.ContentItemRepository;
 import com.bcttg.module.dashboard.service.SystemAuditTrailService;
+import com.bcttg.module.home.service.PublicModuleAccessService;
 import com.bcttg.module.media.entity.MediaAsset;
 import com.bcttg.module.media.repository.MediaAssetRepository;
 
@@ -22,6 +24,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,17 +34,20 @@ public class ContentItemService {
     private final ContentItemRepository itemRepository;
     private final MediaAssetRepository mediaRepository;
     private final SystemAuditTrailService auditTrailService;
+    private final PublicModuleAccessService publicModuleAccessService;
 
     public ContentItemService(
         ContentCategoryRepository categoryRepository,
         ContentItemRepository itemRepository,
         MediaAssetRepository mediaRepository,
-        SystemAuditTrailService auditTrailService
+        SystemAuditTrailService auditTrailService,
+        PublicModuleAccessService publicModuleAccessService
     ) {
         this.categoryRepository = categoryRepository;
         this.itemRepository = itemRepository;
         this.mediaRepository = mediaRepository;
         this.auditTrailService = auditTrailService;
+        this.publicModuleAccessService = publicModuleAccessService;
     }
 
     public Page<ContentItem> findAll(Long categoryId, ContentType type, String q, Boolean isVisible, Pageable pageable) {
@@ -67,8 +73,26 @@ public class ContentItemService {
         return itemRepository.findAll(spec, pageable);
     }
 
-    public Page<ContentItem> findAllPublic(Long categoryId, ContentType type, String q, Pageable pageable) {
-        return findAll(categoryId, type, q, true, pageable);
+    public Page<ContentItem> findAllPublic(Long categoryId, ContentType type, String q, Pageable pageable, Authentication authentication) {
+        if (publicModuleAccessService.isAuthenticated(authentication)) {
+            return findAll(categoryId, type, q, true, pageable);
+        }
+        if (categoryId != null) {
+            ContentCategory category = getVisibleCategory(categoryId);
+            publicModuleAccessService.ensureContentAccess(authentication, category.getType());
+            return findAll(categoryId, type, q, true, pageable);
+        }
+        if (type != null) {
+            publicModuleAccessService.ensureContentAccess(authentication, type);
+            return findAll(categoryId, type, q, true, pageable);
+        }
+        Set<ContentType> guestTypes = publicModuleAccessService.getGuestContentTypes();
+        if (guestTypes.isEmpty()) {
+            return Page.empty(pageable);
+        }
+        Specification<ContentItem> spec = buildSpecification(categoryId, type, q, true)
+            .and((root, query, cb) -> root.get("category").get("type").in(guestTypes));
+        return itemRepository.findAll(spec, pageable);
     }
 
     public ContentItem getById(Long id) {
@@ -85,6 +109,12 @@ public class ContentItemService {
         if (!Boolean.TRUE.equals(item.getIsVisible())) {
             throw new ApiException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "Content item not found");
         }
+        return item;
+    }
+
+    public ContentItem getVisibleById(Long id, Authentication authentication) {
+        ContentItem item = getVisibleById(id);
+        publicModuleAccessService.ensureContentAccess(authentication, item.getCategory().getType());
         return item;
     }
 
@@ -206,12 +236,46 @@ public class ContentItemService {
     }
 
     @Transactional
-    public ContentItem incrementViewCount(Long id, String actorPhone) {
-        ContentItem item = getVisibleById(id);
-        item.setViewCount(item.getViewCount() + 1);
+    public ContentItem incrementViewCount(Long id, String actorPhone, Authentication authentication) {
+        ContentItem item = getVisibleById(id, authentication);
+        int currentViewCount = item.getViewCount() != null ? item.getViewCount() : 0;
+        item.setViewCount(currentViewCount + 1);
         ContentItem saved = itemRepository.save(item);
-        auditTrailService.record(actorPhone, "VIEW", "CONTENT", saved.getTitle(), "content_id=" + saved.getId());
+        String auditActor = publicModuleAccessService.isAuthenticated(authentication) ? actorPhone : null;
+        auditTrailService.record(auditActor, "VIEW", "CONTENT", saved.getTitle(), "content_id=" + saved.getId());
         return saved;
+    }
+
+    private Specification<ContentItem> buildSpecification(Long categoryId, ContentType type, String q, Boolean isVisible) {
+        Specification<ContentItem> spec = Specification.<ContentItem>where(
+            (root, query, cb) -> cb.isNull(root.get("deletedAt"))
+        );
+        if (categoryId != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("category").get("id"), categoryId));
+        }
+        if (type != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("category").get("type"), type));
+        }
+        if (q != null && !q.isBlank()) {
+            String like = "%" + q.toLowerCase(Locale.ROOT) + "%";
+            spec = spec.and((root, query, cb) -> cb.or(
+                cb.like(cb.lower(root.get("title")), like),
+                cb.like(cb.lower(root.get("summary")), like)
+            ));
+        }
+        if (isVisible != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("isVisible"), isVisible));
+        }
+        return spec;
+    }
+
+    private ContentCategory getVisibleCategory(Long categoryId) {
+        ContentCategory category = categoryRepository.findById(categoryId)
+            .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "Content category not found"));
+        if (category.getDeletedAt() != null || !Boolean.TRUE.equals(category.getIsVisible())) {
+            throw new ApiException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "Content category not found");
+        }
+        return category;
     }
 
     private <T> T valueOrDefault(T requestedValue, T currentValue) {

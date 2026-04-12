@@ -10,4 +10,6 @@ public interface HomeModuleRepository extends JpaRepository<HomeModuleConfig, St
     List<HomeModuleConfig> findAllByOrderBySortOrderAscIdAsc();
 
     List<HomeModuleConfig> findAllByEnabledTrueOrderBySortOrderAscIdAsc();
+
+    List<HomeModuleConfig> findAllByEnabledTrueAndIsGuestTrueOrderBySortOrderAscIdAsc();
 }

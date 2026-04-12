@@ -7,6 +7,7 @@ import java.util.Optional;
 import com.bcttg.common.ApiException;
 import com.bcttg.common.ErrorCode;
 import com.bcttg.module.dashboard.service.SystemAuditTrailService;
+import com.bcttg.module.home.service.PublicModuleAccessService;
 import com.bcttg.module.song.dto.CreateSongCategoryRequest;
 import com.bcttg.module.song.dto.ReorderSongCategoryRequest;
 import com.bcttg.module.song.dto.UpdateSongCategoryRequest;
@@ -18,6 +19,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,15 +28,18 @@ public class SongCategoryService {
     private final SongCategoryRepository categoryRepository;
     private final SongRepository songRepository;
     private final SystemAuditTrailService auditTrailService;
+    private final PublicModuleAccessService publicModuleAccessService;
 
     public SongCategoryService(
         SongCategoryRepository categoryRepository,
         SongRepository songRepository,
-        SystemAuditTrailService auditTrailService
+        SystemAuditTrailService auditTrailService,
+        PublicModuleAccessService publicModuleAccessService
     ) {
         this.categoryRepository = categoryRepository;
         this.songRepository = songRepository;
         this.auditTrailService = auditTrailService;
+        this.publicModuleAccessService = publicModuleAccessService;
     }
 
     public Page<SongCategory> findAll(Long parentId, String q, Boolean isVisible, Pageable pageable) {
@@ -57,7 +62,8 @@ public class SongCategoryService {
         return categoryRepository.findAll(spec, pageable);
     }
 
-    public Page<SongCategory> findAllPublic(Long parentId, String q, Pageable pageable) {
+    public Page<SongCategory> findAllPublic(Long parentId, String q, Pageable pageable, Authentication authentication) {
+        publicModuleAccessService.ensureSongAccess(authentication);
         return findAll(parentId, q, true, pageable);
     }
 
@@ -76,6 +82,11 @@ public class SongCategoryService {
             throw new ApiException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "Song category not found");
         }
         return category;
+    }
+
+    public SongCategory getVisibleById(Long id, Authentication authentication) {
+        publicModuleAccessService.ensureSongAccess(authentication);
+        return getVisibleById(id);
     }
 
     @Transactional

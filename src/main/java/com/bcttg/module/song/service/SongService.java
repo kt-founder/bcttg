@@ -7,6 +7,7 @@ import java.util.Optional;
 import com.bcttg.common.ApiException;
 import com.bcttg.common.ErrorCode;
 import com.bcttg.module.dashboard.service.SystemAuditTrailService;
+import com.bcttg.module.home.service.PublicModuleAccessService;
 import com.bcttg.module.media.entity.MediaAsset;
 import com.bcttg.module.media.repository.MediaAssetRepository;
 import com.bcttg.module.song.dto.CreateSongRequest;
@@ -21,6 +22,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,17 +32,20 @@ public class SongService {
     private final SongCategoryRepository categoryRepository;
     private final MediaAssetRepository mediaRepository;
     private final SystemAuditTrailService auditTrailService;
+    private final PublicModuleAccessService publicModuleAccessService;
 
     public SongService(
         SongRepository songRepository,
         SongCategoryRepository categoryRepository,
         MediaAssetRepository mediaRepository,
-        SystemAuditTrailService auditTrailService
+        SystemAuditTrailService auditTrailService,
+        PublicModuleAccessService publicModuleAccessService
     ) {
         this.songRepository = songRepository;
         this.categoryRepository = categoryRepository;
         this.mediaRepository = mediaRepository;
         this.auditTrailService = auditTrailService;
+        this.publicModuleAccessService = publicModuleAccessService;
     }
 
     public Page<Song> findAll(Long categoryId, String q, Boolean isVisible, Pageable pageable) {
@@ -60,7 +65,8 @@ public class SongService {
         return songRepository.findAll(spec, pageable);
     }
 
-    public Page<Song> findAllPublic(Long categoryId, String q, Pageable pageable) {
+    public Page<Song> findAllPublic(Long categoryId, String q, Pageable pageable, Authentication authentication) {
+        publicModuleAccessService.ensureSongAccess(authentication);
         return findAll(categoryId, q, true, pageable);
     }
 
@@ -79,6 +85,11 @@ public class SongService {
             throw new ApiException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "Song not found");
         }
         return song;
+    }
+
+    public Song getVisibleById(Long id, Authentication authentication) {
+        publicModuleAccessService.ensureSongAccess(authentication);
+        return getVisibleById(id);
     }
 
     @Transactional
@@ -186,12 +197,13 @@ public class SongService {
     }
 
     @Transactional
-    public Song incrementListenCount(Long id, String actorPhone) {
-        Song song = getVisibleById(id);
+    public Song incrementListenCount(Long id, String actorPhone, Authentication authentication) {
+        Song song = getVisibleById(id, authentication);
         int currentListenCount = song.getListenCount() != null ? song.getListenCount() : 0;
         song.setListenCount(currentListenCount + 1);
         Song saved = songRepository.save(song);
-        auditTrailService.record(actorPhone, "LISTEN", "SONG", saved.getTitle(), "song_id=" + saved.getId());
+        String auditActor = publicModuleAccessService.isAuthenticated(authentication) ? actorPhone : null;
+        auditTrailService.record(auditActor, "LISTEN", "SONG", saved.getTitle(), "song_id=" + saved.getId());
         return saved;
     }
 
