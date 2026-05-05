@@ -122,9 +122,6 @@ public class ContentItemService {
     public ContentItem create(CreateContentItemRequest request, String actorPhone) {
         ContentCategory category = categoryRepository.findById(request.getCategoryId())
             .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "Content category not found"));
-        if (category.getParent() == null) {
-            throw new ApiException(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST, "Content item must belong to a child category");
-        }
 
         MediaAsset coverMedia = null;
         if (request.getCoverMediaId() != null) {
@@ -157,9 +154,6 @@ public class ContentItemService {
         if (request.getCategoryId() != null) {
             category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "Content category not found"));
-        }
-        if (category.getParent() == null) {
-            throw new ApiException(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST, "Content item must belong to a child category");
         }
         MediaAsset coverMedia = item.getCoverMedia();
         if (request.getCoverMediaId() != null) {

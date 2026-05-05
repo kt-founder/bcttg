@@ -110,7 +110,7 @@ public class HomeModuleService {
             .map(item -> normalize(item.getId()))
             .collect(Collectors.toSet());
         Set<String> existingIds = existing.stream().map(HomeModuleConfig::getId).collect(Collectors.toSet());
-        if (!requestedIds.equals(existingIds) || !requestedIds.equals(HomeModuleId.valuesAsSet())) {
+         if (!requestedIds.equals(existingIds)) {
             throw new ApiException(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST, "Home module payload must include all configured modules");
         }
         Set<Integer> sortOrders = new HashSet<>();

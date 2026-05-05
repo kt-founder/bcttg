@@ -82,7 +82,7 @@ public class GlobalExceptionHandler {
             ApiError error = new ApiError(ErrorCode.FORBIDDEN.name(), "User is inactive", List.of());
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(error));
         }
-        ApiError error = new ApiError(ErrorCode.UNAUTHORIZED.name(), "Invalid phone or password", List.of());
+        ApiError error = new ApiError(ErrorCode.UNAUTHORIZED.name(), "Số điện thoại hoặc mật khẩu không đúng", List.of());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(error));
     }
 
