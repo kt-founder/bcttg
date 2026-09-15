@@ -15,6 +15,7 @@ import com.bcttg.module.content.entity.ContentItem;
 import com.bcttg.module.content.entity.ContentType;
 import com.bcttg.module.content.repository.ContentCategoryRepository;
 import com.bcttg.module.content.repository.ContentItemRepository;
+import com.bcttg.module.content.support.FlatContentCategorySupport;
 import com.bcttg.module.dashboard.service.SystemAuditTrailService;
 import com.bcttg.module.home.service.PublicModuleAccessService;
 import com.bcttg.module.media.entity.MediaAsset;
@@ -35,19 +36,22 @@ public class ContentItemService {
     private final MediaAssetRepository mediaRepository;
     private final SystemAuditTrailService auditTrailService;
     private final PublicModuleAccessService publicModuleAccessService;
+    private final FlatContentCategorySupport flatContentCategorySupport;
 
     public ContentItemService(
         ContentCategoryRepository categoryRepository,
         ContentItemRepository itemRepository,
         MediaAssetRepository mediaRepository,
         SystemAuditTrailService auditTrailService,
-        PublicModuleAccessService publicModuleAccessService
+        PublicModuleAccessService publicModuleAccessService,
+        FlatContentCategorySupport flatContentCategorySupport
     ) {
         this.categoryRepository = categoryRepository;
         this.itemRepository = itemRepository;
         this.mediaRepository = mediaRepository;
         this.auditTrailService = auditTrailService;
         this.publicModuleAccessService = publicModuleAccessService;
+        this.flatContentCategorySupport = flatContentCategorySupport;
     }
 
     public Page<ContentItem> findAll(Long categoryId, ContentType type, String q, Boolean isVisible, Pageable pageable) {
@@ -120,8 +124,7 @@ public class ContentItemService {
 
     @Transactional
     public ContentItem create(CreateContentItemRequest request, String actorPhone) {
-        ContentCategory category = categoryRepository.findById(request.getCategoryId())
-            .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "Content category not found"));
+        ContentCategory category = resolveCategoryForCreate(request, actorPhone);
 
         MediaAsset coverMedia = null;
         if (request.getCoverMediaId() != null) {
@@ -204,8 +207,6 @@ public class ContentItemService {
         if (request.getOrders() == null || request.getOrders().isEmpty()) {
             throw new ApiException(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST, "Orders cannot be empty");
         }
-        ContentCategory category = categoryRepository.findById(request.getCategoryId())
-            .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "Content category not found"));
         List<Long> ids = request.getOrders().stream().map(ReorderContentItemRequest.OrderItem::getId).toList();
         List<ContentItem> items = itemRepository.findAllById(ids);
         if (items.size() != ids.size()) {
@@ -215,10 +216,28 @@ public class ContentItemService {
             if (item.getDeletedAt() != null) {
                 throw new ApiException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "Some content items not found");
             }
-            if (!item.getCategory().getId().equals(category.getId())) {
-                throw new ApiException(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST, "Item category mismatch in reorder scope");
-            }
         }
+
+        ContentCategory category;
+        if (request.getCategoryId() != null) {
+            category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "Content category not found"));
+            for (ContentItem item : items) {
+                if (!item.getCategory().getId().equals(category.getId())) {
+                    throw new ApiException(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST, "Item category mismatch in reorder scope");
+                }
+            }
+        } else if (FlatContentCategorySupport.isFlatType(request.getType())) {
+            for (ContentItem item : items) {
+                if (item.getCategory().getType() != request.getType()) {
+                    throw new ApiException(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST, "Item type mismatch in reorder scope");
+                }
+            }
+            category = flatContentCategorySupport.resolveFlatRootCategory(request.getType(), actorPhone);
+        } else {
+            throw new ApiException(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST, "categoryId or supported type is required for reorder");
+        }
+
         for (ReorderContentItemRequest.OrderItem order : request.getOrders()) {
             items.stream()
                 .filter(i -> i.getId().equals(order.getId()))
@@ -226,7 +245,8 @@ public class ContentItemService {
                 .ifPresent(i -> i.setSortOrder(order.getSortOrder()));
         }
         itemRepository.saveAll(items);
-        auditTrailService.record(actorPhone, "UPDATE", "CONTENT", category.getName(), "sắp xếp lại nội dung của danh mục “" + category.getName() + "”");
+        String auditLabel = category.getName();
+        auditTrailService.record(actorPhone, "UPDATE", "CONTENT", auditLabel, "sắp xếp lại nội dung “" + auditLabel + "”");
     }
 
     @Transactional
@@ -270,6 +290,18 @@ public class ContentItemService {
             throw new ApiException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "Content category not found");
         }
         return category;
+    }
+
+    private ContentCategory resolveCategoryForCreate(CreateContentItemRequest request, String actorPhone) {
+        if (request.getCategoryId() != null) {
+            return categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "Content category not found"));
+        }
+        ContentType type = request.getType();
+        if (FlatContentCategorySupport.isFlatType(type)) {
+            return flatContentCategorySupport.resolveFlatRootCategory(type, actorPhone);
+        }
+        throw new ApiException(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST, "categoryId is required unless type is a flat content type");
     }
 
     private <T> T valueOrDefault(T requestedValue, T currentValue) {

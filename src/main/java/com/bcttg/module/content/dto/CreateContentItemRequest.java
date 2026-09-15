@@ -2,13 +2,14 @@ package com.bcttg.module.content.dto;
 
 import java.time.Instant;
 
+import com.bcttg.module.content.entity.ContentType;
+
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 public class CreateContentItemRequest {
-    @NotNull
     private Long categoryId;
+    private ContentType type;
     @NotBlank
     private String title;
     private String summary;
@@ -26,6 +27,14 @@ public class CreateContentItemRequest {
 
     public void setCategoryId(Long categoryId) {
         this.categoryId = categoryId;
+    }
+
+    public ContentType getType() {
+        return type;
+    }
+
+    public void setType(ContentType type) {
+        this.type = type;
     }
 
     public String getTitle() {

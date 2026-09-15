@@ -57,6 +57,20 @@ Flyway runs automatically on startup.
 - Use HTTPS and a reverse proxy (Nginx/Traefik) if exposed publicly.
 - Back up the MySQL volume regularly.
 
+### Nginx upload limit (50MB)
+If your API is behind Nginx, configure body size to avoid `413 Request Entity Too Large`.
+
+- Sample config file: `deploy/nginx/bcttg.conf`
+- Includes `client_max_body_size 50m;` for `api.hotrocode.tech` and `bcttg.io.vn`
+
+Apply on server:
+```bash
+sudo cp deploy/nginx/bcttg.conf /etc/nginx/sites-available/bcttg.conf
+sudo ln -sf /etc/nginx/sites-available/bcttg.conf /etc/nginx/sites-enabled/bcttg.conf
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
 ## Troubleshooting
 - API can?t connect to DB: wait for MySQL to be healthy, or check compose logs.
 - Flyway errors: ensure DB is empty or compatible with the current migrations.

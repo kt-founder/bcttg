@@ -57,6 +57,9 @@ public class PublicModuleAccessService {
         if (isGuestModuleEnabled(HomeModuleId.NET_TIEU_BIEU)) {
             types.add(ContentType.NET_TIEU_BIEU);
         }
+        if (isGuestModuleEnabled(HomeModuleId.TIN_TUC)) {
+            types.add(ContentType.TIN_TUC);
+        }
         return types;
     }
 
@@ -105,6 +108,9 @@ public class PublicModuleAccessService {
         }
         if (type == ContentType.NET_TIEU_BIEU) {
             return HomeModuleId.NET_TIEU_BIEU;
+        }
+        if (type == ContentType.TIN_TUC) {
+            return HomeModuleId.TIN_TUC;
         }
         return null;
     }

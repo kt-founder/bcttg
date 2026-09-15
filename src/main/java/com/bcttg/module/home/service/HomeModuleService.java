@@ -142,7 +142,7 @@ public class HomeModuleService {
             HomeModuleId.THU_TRUONG.getValue(), () -> dataProfileRepository.countByDeletedAtIsNullAndIsVisibleTrueAndProfileType(ProfileType.THU_TRUONG),
             HomeModuleId.ANH_HUNG.getValue(), () -> dataProfileRepository.countByDeletedAtIsNullAndIsVisibleTrueAndProfileType(ProfileType.ANH_HUNG),
             HomeModuleId.CA_KHUC.getValue(), () -> songRepository.countByDeletedAtIsNullAndIsVisibleTrue(),
-            HomeModuleId.TIN_TUC.getValue(), () -> 0L
+            HomeModuleId.TIN_TUC.getValue(), () -> contentItemRepository.countVisibleByCategoryType(ContentType.TIN_TUC)
         );
         LongSupplier supplier = suppliers.get(moduleId);
         return supplier != null ? supplier.getAsLong() : 0L;
